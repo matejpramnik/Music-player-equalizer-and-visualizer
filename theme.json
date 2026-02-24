@@ -1,0 +1,636 @@
+{
+    "@main_panels": {
+        "colours": {
+            "dark_bg": "#0A0C10FF"
+        },
+        "misc": {
+            "border_width": "0",
+            "shadow_width": "0"
+        }
+    },
+
+    "label": {
+        "colours": {
+            "normal_text": "#FCFCFCFF",
+            "selected_text": "#FCFCFCFF",
+            "hovered_text": "#FCFCFCFF"
+        }
+    },
+
+    "button": {
+        "colours": {
+            "normal_bg": "#00000000",
+            "hovered_bg": "#00000000",
+            "active_bg": "#00000000",
+            "disabled_bg": "#00000000",
+            "normal_border": "#00000000",
+            "hovered_border": "#6D6D6DAC",
+            "active_border": "#00000000",
+            "normal_text": "#FCFCFCFF",
+            "selected_text": "#FCFCFCFF",
+            "hovered_text": "#FCFCFCFF"
+        },
+        "misc": {
+            "auto_scale_images": "0"
+        }
+    },
+
+    "#eq_slider_panel": {
+        "colours": {
+            "dark_bg": "#0A0C10FF"
+        },
+        "misc": {
+            "border_width": "0",
+            "shadow_width": "0"
+        }
+    },
+
+    "#eq_slider": {
+        "colours": {
+            "normal_border": "#B8C0D9",
+            "dark_bg": "#F5F7FA"
+        },
+        "misc": {
+            "shape": "rounded_rectangle",
+            "enable_arrow_buttons": "0",
+            "shadow_width": "0",
+            "state_transitions": {
+                "normal_hovered": "0.07",
+                "hovered_normal": "0.07"
+            }
+        }
+    },
+
+    "#volume_slider": {
+        "colours": {
+            "normal_border": "#738FA9FF",
+            "dark_bg": "#738FA9FF"
+        },
+        "misc": {
+            "shape": "rounded_rectangle",
+            "shadow_width": "0",
+            "enable_arrow_buttons": "0"
+        }
+    },
+
+    "horizontal_slider.#sliding_button": {
+        "colours": {
+            "normal_bg": "#1B98E0FF",
+            "normal_border": "#1B98E0FF",
+            "hovered_bg": "#247BA0FF",
+            "active_bg": "#247BA0FF",
+            "hovered_border": "#247BA0FF",
+            "active_border": "#247BA0FF"
+        },
+        "misc": {
+            "shape": "rounded_rectangle",
+            "shadow_width": "0"
+        }
+    },
+
+    "#audio_file_progress_slider": {
+        "colours": {
+            "dark_bg": "#00000000",
+            "normal_border": "#00000000",
+            "hovered_bg": "#00000000",
+            "hovered_border": "#00000000"
+        },
+        "misc": {
+            "border_width": "0",
+            "shadow_width": "0"
+        }
+    },
+
+    "#slider_line": {
+        "colours": {
+            "dark_bg": "#738FA9FF",
+            "normal_border": "#738FA9FF"
+        },
+        "misc": {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": "2",
+            "shadow_width": "0"
+        }
+    },
+
+    "#slider_wiper": {
+        "colours": {
+            "normal_border": "#00000000",
+            "hovered_border": "#00000000",
+            "active_border": "#00000000",
+            "dark_bg": "#00000000"
+        },
+        "misc": {
+            "enable_arrow_buttons": "0",
+            "sliding_button_width": "10",
+            "border_width": "0",
+            "shadow_width": "0"
+        }
+    },
+
+
+
+
+    "@control_buttons": {
+        "colours": {
+            "hovered_border": "#00000000",
+            "active_border": "#00000000"
+        },
+        "misc": {
+            "border_width": "0",
+            "shadow_width": "0",
+            "image_border_width": "0"
+        }
+    },
+
+    "#play_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/play.png"
+            },
+            "hovered_image": {
+                "path": "icons/playBig.png"
+            },
+            "selected_image": {
+                "path": "icons/play.png"
+            }
+        }
+    },
+
+    "#pause_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/pause.png"
+            },
+            "hovered_image": {
+                "path": "icons/pauseBig.png"
+            },
+            "selected_image": {
+                "path": "icons/pause.png"
+            }
+        }
+    },
+
+    "#next_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/next.png"
+            },
+            "hovered_image": {
+                "path": "icons/nextBig.png"
+            },
+            "selected_image": {
+                "path": "icons/next.png"
+            }
+        }
+    },
+
+    "#previous_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/previous.png"
+            },
+            "hovered_image": {
+                "path": "icons/previousBig.png"
+            },
+            "selected_image": {
+                "path": "icons/previous.png"
+            }
+        }
+    },
+
+    "#cross_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/cross.png"
+            },
+            "hovered_image": {
+                "path": "icons/crossBig.png"
+            },
+            "selected_image": {
+                "path": "icons/cross.png"
+            }
+        }
+    },
+
+    "#shuffle_disabled_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/darkShuffleDisabled.png"
+            },
+            "hovered_image": {
+                "path": "icons/darkShuffleDisabledBig.png"
+            },
+            "selected_image": {
+                "path": "icons/darkShuffleDisabled.png"
+            }
+        }
+    },
+
+    "#shuffle_enabled_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/shuffle.png"
+            },
+            "hovered_image": {
+                "path": "icons/shuffleBig.png"
+            },
+            "selected_image": {
+                "path": "icons/shuffle.png"
+            }
+        }
+    },
+
+    "#repeat_disabled_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/darkRepeatDisabled.png"
+            },
+            "hovered_image": {
+                "path": "icons/darkRepeatDisabledBig.png"
+            },
+            "selected_image": {
+                "path": "icons/darkRepeatDisabled.png"
+            }
+        }
+    },
+
+    "#repeat_enabled_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/repeat.png"
+            },
+            "hovered_image": {
+                "path": "icons/repeatBig.png"
+            },
+            "selected_image": {
+                "path": "icons/repeat.png"
+            }
+        }
+    },
+
+    "#repeat_one_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/repeatOne.png"
+            },
+            "hovered_image": {
+                "path": "icons/repeatOneBig.png"
+            },
+            "selected_image": {
+                "path": "icons/repeatOne.png"
+            }
+        }
+    },
+
+    "#burger_menu_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/menu.png"
+            },
+            "hovered_image": {
+                "path": "icons/menuBig.png"
+            },
+            "selected_image": {
+                "path": "icons/menu.png"
+            }
+        }
+    },
+
+    "#volume_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/volume.png"
+            },
+            "hovered_image": {
+                "path": "icons/volumeBig.png"
+            },
+            "selected_image": {
+                "path": "icons/volume.png"
+            }
+        }
+    },
+
+    "#mute_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/mute.png"
+            },
+            "hovered_image": {
+                "path": "icons/muteBig.png"
+            },
+            "selected_image": {
+                "path": "icons/mute.png"
+            }
+        }
+    },
+
+    "#options_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/options.png"
+            },
+            "hovered_image": {
+                "path": "icons/optionsBig.png"
+            },
+            "selected_image": {
+                "path": "icons/options.png"
+            }
+        }
+    },
+
+
+
+
+
+
+    "#transparent_button": {
+        "colours": {
+            "normal_bg": "#00000000",
+            "hover_bg": "#00000000",
+            "pressed_bg": "#00000000",
+            "normal_border": "#575757FF",
+            "hovered_border": "#A8A8A8FF"
+        },
+        "misc": {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": "10"
+        }
+    },
+
+    "#SongItem_panel": {
+        "colours": {
+            "dark_bg": "#0A0C10FF"
+        },
+        "misc": {
+            "shape": "rounded_rectangle",
+            "border_width": "0",
+            "shadow_width": "0",
+            "shape_corner_radius": "10"
+        }
+    },
+
+    "#playing_SongItem_panel": {
+        "colours": {
+            "dark_bg": "#0A0C10FF",
+            "normal_border": "#1B98E0FF"
+        },
+        "misc": {
+            "shape": "rounded_rectangle",
+            "border_width": "1",
+            "shadow_width": "0",
+            "shape_corner_radius": "10"
+        }
+    },
+
+    "scrolling_container.vertical_scroll_bar": {
+        "colours": {
+            "disabled_bg": "#00000000",
+            "dark_bg": "#0A0C10FF",
+            "normal_border": "#738FA9FF"
+        },
+        "misc": {
+            "enable_arrow_buttons": "0",
+            "border_width": "0",
+            "shadow_width": "0"
+        }
+    },
+
+    "scrolling_container.vertical_scroll_bar.#sliding_button": {
+        "colours": {
+            "normal_bg": "#738FA9FF",
+            "hovered_bg": "#738FA9FF",
+            "selected_bg": "#738FA9FF",
+            "active_bg": "#247BA0"
+        },
+        "misc": {
+            "border_width": "0",
+            "shadow_width": "0"
+        }
+    },
+
+    "#burger_menu_panel": {
+        "colours": {
+            "dark_bg": "#0A0C10FF",
+            "normal_border": "#DADFEA"
+        },
+        "misc": {
+            "shape": "rounded_rectangle",
+            "border_width": "1",
+            "shadow_width": "0",
+            "shape_corner_radius": "0, 0, 0, 10"
+        }
+    },
+
+    "#reset_single_button": {
+        "images": {
+            "normal_image": {
+                "path": "icons/reset.png"
+            },
+            "hovered_image": {
+                "path": "icons/resetBig.png"
+            },
+            "selected_image": {
+                "path": "icons/reset.png"
+            }
+        },
+        "colours": {
+            "hovered_bg": "#00000000",
+            "hovered_text": "#00000000",
+            "hovered_border": "#00000000"
+        },
+        "misc": {
+            "border_width": "0",
+            "shadow_width": "0"
+        }
+    },
+
+
+
+
+
+    "#gain_label": {
+        "colours": {
+            "dark_bg": "#00000000"
+        },
+        "font": {
+            "name": "tw_cen_mt",
+            "size": "18"
+        },
+        "misc": {
+            "text_vert_alignment": "top",
+            "text_horiz_alignment": "center"
+        }
+    },
+
+    "@SongItem_labels": {
+        "colours": {
+            "dark_bg": "#00000000",
+            "normal_text": "#FCFCFCFF"
+        },
+        "misc": {
+            "text_horiz_alignment": "center",
+            "text_vert_alignment": "center"
+        }
+    },
+
+    "#huge_label": {
+        "font": {
+            "name": "tw_cen_mt",
+            "size": "34"
+        }
+    },
+
+    "#big_label": {
+        "font": {
+            "name": "tw_cen_mt",
+            "size": "26"
+        }
+    },
+
+    "#normal_label": {
+        "font": {
+            "name": "tw_cen_mt",
+            "size": "20"
+        }
+    },
+
+    "#eq_label": {
+        "font": {
+            "name": "tw_cen_mt",
+            "size": "19"
+        },
+        "colours": {
+            "dark_bg": "#00000000",
+            "normal_text": "#FCFCFCFF"
+        }
+    },
+
+
+
+
+
+    "@menu_choice_buttons": {
+        "colours": {
+            "normal_border": "#00000000",
+            "active_border": "#00000000",
+            "hovered_border": "#6D6D6DAC",
+            "normal_text": "#FCFCFCFF",
+            "selected_text": "#FCFCFCFF",
+            "hovered_text": "#FCFCFCFF"
+        },
+        "misc": {
+            "shape": "rounded_rectangle",
+            "shadow_width": "0",
+            "shape_corner_radius": "10",
+            "text_horiz_alignment": "right",
+            "text_vert_alignment": "center"
+        },
+        "font": {
+            "name": "tw_cen_mt",
+            "size": "26"
+        }
+    },
+
+    "#open_dir_choice": {
+        "images": {
+            "normal_image": {
+                "path": "icons/dir.png",
+                "position": [0.05, 0.5]
+            },
+            "hovered_image": {
+                "path": "icons/dirBig.png",
+                "position": [0.05, 0.5]
+            },
+            "selected_image": {
+                "path": "icons/dir.png",
+                "position": [0.05, 0.5]
+            }
+        }
+    },
+
+    "#add_dir_choice": {
+        "images": {
+            "normal_image": {
+                "path": "icons/dirAdd.png",
+                "position": [0.05, 0.5]
+            },
+            "hovered_image": {
+                "path": "icons/dirAddBig.png",
+                "position": [0.05, 0.5]
+            },
+            "selected_image": {
+                "path": "icons/dirAdd.png",
+                "position": [0.05, 0.5]
+            }
+        }
+    },
+
+    "#open_file_choice": {
+        "images": {
+            "normal_image": {
+                "path": "icons/file.png",
+                "position": [0.05, 0.5]
+            },
+            "hovered_image": {
+                "path": "icons/fileBig.png",
+                "position": [0.05, 0.5]
+            },
+            "selected_image": {
+                "path": "icons/file.png",
+                "position": [0.05, 0.5]
+            }
+        }
+    },
+
+    "#eq_choice": {
+        "images": {
+            "normal_image": {
+                "path": "icons/equalizer.png",
+                "position": [0.05, 0.5]
+            },
+            "hovered_image": {
+                "path": "icons/equalizerBig.png",
+                "position": [0.05, 0.5]
+            },
+            "selected_image": {
+                "path": "icons/equalizer.png",
+                "position": [0.05, 0.5]
+            }
+        }
+    },
+
+    "#change_vis_choice": {
+        "images": {
+            "normal_image": {
+                "path": "icons/chart.png",
+                "position": [0.05, 0.5]
+            },
+            "hovered_image": {
+                "path": "icons/chartBig.png",
+                "position": [0.05, 0.5]
+            },
+            "selected_image": {
+                "path": "icons/chart.png",
+                "position": [0.05, 0.5]
+            }
+        }
+    },
+
+    "#switch_theme_choice": {
+        "images": {
+            "normal_image": {
+                "path": "icons/theme.png",
+                "position": [0.05, 0.5]
+            },
+            "hovered_image": {
+                "path": "icons/themeBig.png",
+                "position": [0.05, 0.5]
+            },
+            "selected_image": {
+                "path": "icons/theme.png",
+                "position": [0.05, 0.5]
+            }
+        }
+    }
+}
