@@ -536,16 +536,16 @@ class MusicControlPanel(Panel):
 
             elif event.ui_element == self.volume_btn:
                 if "#volume_button" in self.volume_btn.object_ids:
+                    app.change_volume(0.0)
+                    self.last_volume = self.volume
                     self.volume_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                             object_id="#mute_button"))
-                    self.last_volume = self.volume
-                    app.change_volume(0)
                 elif "#mute_button" in self.volume_btn.object_ids and self.volume > 0.0:
+                    app.change_volume(self.volume)
+                    self.volume = self.last_volume
                     self.volume_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                             object_id="#volume_button"))
-                    self.volume = self.last_volume
-                    app.change_volume(self.volume)
-
+                    
             elif event.ui_element == self.shuffle_btn:
                 if "#shuffle_disabled_button" in self.shuffle_btn.object_ids:
                     self.shuffle_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
