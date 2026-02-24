@@ -538,11 +538,14 @@ class MusicControlPanel(Panel):
                 if "#volume_button" in self.volume_btn.object_ids:
                     app.change_volume(0.0)
                     self.last_volume = self.volume
+                    self.volume = 0.0
+                    self.volume_slider.set_current_value(self.volume)
                     self.volume_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                             object_id="#mute_button"))
-                elif "#mute_button" in self.volume_btn.object_ids and self.volume > 0.0:
+                elif "#mute_button" in self.volume_btn.object_ids:
                     app.change_volume(self.volume)
                     self.volume = self.last_volume
+                    self.volume_slider.set_current_value(self.volume)
                     self.volume_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                             object_id="#volume_button"))
                     
