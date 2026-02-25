@@ -7,6 +7,7 @@ from Pramník_app import State, App
 
 class Panel():
     def __init__(self, rect: pg.Rect, manager: pygame_gui.UIManager):
+        self.supported_extensions = [".wav", ".mp3", ".mp2", ".flac", ".ogg", ".aac", ".m4a", ".3gp", ".aiff", ".wv"]
         self.rect = rect
         self.surface = pg.Surface((self.rect.width, self.rect.height), pg.SRCALPHA)
         self.manager = manager
@@ -40,7 +41,9 @@ class Panel():
                 if e.is_dir() or e.is_symlink():
                     continue
                 else:
-                    retarr.append(e.path)
+                    _, ext = os.path.splitext(e)
+                    if ext in self.supported_extensions:
+                        retarr.append(e.path)
         return retarr
     
     def open_file(self) -> str:
@@ -100,7 +103,6 @@ class MusicControlPanel(Panel):
         self.last_volume = volume
         self.playing_SongItem = None
         
-        self.supported_extensions = [".wav", ".mp3", ".mp2", ".flac", ".ogg", ".aac", ".m4a", ".3gp", ".aiff", ".wv"]
         self.build_ui()
 
     def redraw(self, width, height):
@@ -371,12 +373,11 @@ class MusicControlPanel(Panel):
             starting_height=1
         )
         q = []
-        y = -3
-        for song in new_queue: 
-            _, ext = os.path.splitext(song)
-            if ext in self.supported_extensions and os.path.exists(song): # ak je unreachable, trva dlhsie kym to OS zisti
+        y = 0
+        for song in new_queue:
+            if os.path.exists(song): # ak je unreachable, trva dlhsie kym to OS zisti
                 tag = TinyTag.get(song)
-                SongItem(rect=pg.Rect(0, y + 3, self.surface.get_width() - 90, 85),
+                SongItem(rect=pg.Rect(0, y, self.surface.get_width() - 90, 85),
                         manager=self.manager,
                         song_name=f"{tag.title}",
                         artist=f"{tag.artist}",
@@ -402,20 +403,18 @@ class MusicControlPanel(Panel):
 
         for song in new_queue:
             y = 87 * len(self.queue)
-            _, ext = os.path.splitext(song)
-            if ext in self.supported_extensions:
-                tag = TinyTag.get(song)
-                self.queue_panel.get_container().add_element(
-                    SongItem(rect=pg.Rect(0, y, self.surface.get_width() - 90, 85),
-                            manager=self.manager,
-                            song_name=f"{tag.title}",
-                            artist=f"{tag.artist}",
-                            album=f"{tag.album}",
-                            container=self.queue_panel,
-                            object_id="#SongItem_panel",
-                            file_path=song,
-                            icon_path="icons/cd.png"))
-                self.queue.append(song)
+            tag = TinyTag.get(song)
+            self.queue_panel.get_container().add_element(
+                SongItem(rect=pg.Rect(0, y, self.surface.get_width() - 90, 85),
+                        manager=self.manager,
+                        song_name=f"{tag.title}",
+                        artist=f"{tag.artist}",
+                        album=f"{tag.album}",
+                        container=self.queue_panel,
+                        object_id="#SongItem_panel",
+                        file_path=song,
+                        icon_path="icons/cd.png"))
+            self.queue.append(song)
             y += 87
         self.queue_panel.update_containing_rect_position()
         return True
