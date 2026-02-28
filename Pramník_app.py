@@ -44,7 +44,7 @@ def log_enumerate(iterable, start=1):
 
 def calculate_vis_gain(freqs: dict, q: float, frequency: int) -> float:
     """
-    Calculates the gain for a specific frequency, the middle frequency of an equalizer band and a Q value.
+    Calculates the gain for a specific frequency, the middle frequency of an equalizer band and a Q value. Only affects frequencies in the -3 dB bandwidth.
 
     :param freqs: A dictionary of middle frequencies of an equalizer's peak filters with their gains.
     :param q: Q value.
@@ -53,13 +53,15 @@ def calculate_vis_gain(freqs: dict, q: float, frequency: int) -> float:
     :type q: float
     :type frequency: integer
     """
-    for freq, gain in freqs:
-        if -0.1 < gain < 0.1: continue
-        bw = freq / q
-        if (freq - bw) <= frequency <= (freq + bw):
+    q2 = q * q
+    for center_freq, gain in freqs:
+        if abs(gain) <= 1e-12: continue
+        bw = center_freq / q
+        if (center_freq - bw) <= frequency <= (center_freq + bw):
             # gain je v intervale <-120, 120>
-            # 1 / 12 sluzi ako normalizovanie do intervalu <-10, 10>, tieto hodnoty moze vis_gain nadobudat
-            return ((1 / 12) * gain) / (1 + (q**2) * ((frequency / freq) - (freq / frequency))**2)
+            # 1 / 10 sluzi ako normalizovanie do intervalu <-12, 12>, tieto hodnoty moze vis_gain nadobudat
+            #return gain / 10 * (1 + q2 * ((frequency / center_freq) - (center_freq / frequency))**2)
+            return gain / (10 * (1 + q2 * ((frequency**2 - center_freq**2)**2 / (frequency**2 * center_freq**2))))
     return 0
 
 def normalize_audio(samples: np.ndarray) -> np.ndarray:
@@ -73,12 +75,12 @@ def normalize_audio(samples: np.ndarray) -> np.ndarray:
     s = samples
 
     sabs = np.abs(s)
-    maxVal = np.max(sabs)
+    max_val = np.max(sabs)
 
-    if maxVal <= 1e-12:
+    if max_val <= 1e-12:
         return samples
 
-    scale = target / maxVal
+    scale = target / max_val
     return s * scale
 
 def calculate_magnitudes(datas: np.ndarray) -> np.ndarray:
@@ -104,6 +106,7 @@ def calculate_magnitudes(datas: np.ndarray) -> np.ndarray:
     # magnitudes *= 2.0 / np.sum(window)
 
     magnitudes[magnitudes < 0.05] = 0
+    
 
     return magnitudes
 
@@ -192,7 +195,6 @@ def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
         else:
             raise ValueError("Unsupported sample width")
 
-        pre_gain = 10 ** (-6 / 20)
         while True:
             datas = wf.readframes(chunk)    # kazdu analyzu robim z chunku o velkosti chunk
             if not datas:
@@ -250,6 +252,7 @@ def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
     sound_data = normalize_audio(sound_data)
 
     retval.put((rate, chunk, freq, ret_data, sound_data))
+
 
 
 class State(Enum):
@@ -393,12 +396,11 @@ class App:
         f_max = freq_interval[1]
         fps = rate / chunk
         factor = self.vis_panel.rect.width / 261
-        freq_bin_color = (252, 252, 252) if self.theme == 0 else (24, 52, 78)
+        #freq_bin_color = (252, 252, 252) if self.theme == 0 else (24, 52, 78)
 
         q = self.eq_q_factor
         freqs = self.freqs.items()
-
-        for i,j,v in log_enumerate(working_data):
+        for j,v in enumerate(working_data):
             vis_gain = 0
             f = j * fps
             if f < f_min or f > f_max:
@@ -407,72 +409,65 @@ class App:
 
             # zohladnenie ekvalizera:
             vis_gain = calculate_vis_gain(freqs, q, f)
+            vis_gain_multiplier = 10 ** (vis_gain / 20)
 
             color = np.clip((255-j, 1+j, 0), 0, 255)
             x = j * factor + 5
-            y = self.screen_height - v - (v * vis_gain)
+            y = self.screen_height - (v * vis_gain_multiplier)
             y = self.screen_height if y >= self.screen_height else 0 if y <= 0 else y
 
-            # frekvencne rozsahy (bins)
-            if int(f) in self.freqs.keys():
-                text = self.font.render(f"{round(f)}", True, freq_bin_color)
-                self.vis_panel.surface.blit(text, (x, self.screen_height - 14))
-            
             pg.draw.line(self.vis_panel.surface, color, (x, self.screen_height - 15), (x, y - 15), width = 2)
             counter += 1
 
 
-    def __visualize_3d(self, rate: int, chunk: int, freq_interval: tuple, data: list, pos: int, iter: int, vis_num: int, scale_value: float)-> None:
+    def __visualize_3d(self, rate: int, chunk: int, freq_interval: tuple, data: list, position: int, vis_num: int, scale_value: float)-> None:
         """
         Private method, should not be called explicitly.\n
         Creates one frame of "3D"-type visualization, draws it onto a vis_panel surface.
         """
-        # iter ide zhora dole (po 1 vratane)
-        try:
-            working_data = data[pos]
-        except:
-            working_data = data[pos - vis_num - iter]
 
-        working_data = working_data * scale_value * 1.5
-
-        counter = 0
         f_min = freq_interval[0]
         f_max = freq_interval[1]
         fps = rate / chunk
         factor = self.vis_panel.rect.width / 261
         level_offset = self.vis_panel.rect.width / 111
 
-        opacity = 255 // iter + 40
-        opacity = 255 if opacity > 255 else opacity
-        color = np.clip((255-(iter * 5), 30, 100+(iter * 3), opacity), 0, 255)
-        freq_bin_color = (252, 252, 252) if self.theme == 0 else (24, 52, 78)
-
         q = self.eq_q_factor
         freqs = self.freqs.items()
 
-        for i,j,v in log_enumerate(working_data):
-            
-            vis_gain = 0
-            f = j * fps
-            if f < f_min or f > f_max:
-                counter += 1
-                continue
+        for iter in range(vis_num, 0, -1):
+            pos = position + iter
+            if 0 <= pos < len(data):
+                working_data = data[pos]
+            else:
+                working_data = data[pos - vis_num - iter]
+            working_data = working_data * scale_value
 
-            # zohladnenie ekvalizera:
-            vis_gain = calculate_vis_gain(freqs, q, f)
+            r = max(0, 255 - iter * 5)
+            g = 30
+            b = min(255, 100 + iter * 3)
+            a = min(255, 255 // iter + 40)
+            color = (r, g, b, a)
 
-            x = j * factor + level_offset * (iter - 1) + 5
-            y = self.screen_height - v - (v * vis_gain) - 23 * iter
-            y = self.screen_height - (23 * iter) if y >= self.screen_height - (23 * iter) else 0 if y <= 0 else y
+            current_iter_y = self.screen_height - (23 * iter)
 
-            # frekvencne rozsahy (bins)
-            if f in self.freqs.keys() and iter == vis_num:
-                text = self.font.render(f"{round(f)}", True, freq_bin_color)
-                self.vis_panel.surface.blit(text, (round(j * factor + 5), self.screen_height - 14))
+            for j,v in enumerate(working_data):
+                
+                vis_gain = 0
+                f = j * fps
+                if f < f_min or f > f_max:
+                    continue
 
-            # zmena sirky vyrazne spomaluje vykreslovanie
-            pg.draw.line(self.vis_panel.surface, color, (x, self.screen_height - (23 * iter)), (x, y), width = 1)
-            counter += 1
+                # zohladnenie ekvalizera:
+                vis_gain = calculate_vis_gain(freqs, q, f)
+                vis_gain_multiplier = 10 ** (vis_gain / 20)
+
+                x = j * factor + level_offset * (iter - 1) + 5
+                y = current_iter_y - (v * vis_gain_multiplier)
+                y = current_iter_y if y >= current_iter_y else 0 if y <= 0 else y
+
+                # zmena sirky vyrazne spomaluje vykreslovanie
+                pg.draw.line(self.vis_panel.surface, color, (x, current_iter_y), (x, y), width = 1)
 
 
     def __visualize_circle(self, rate: int, chunk: int, freq_interval: tuple, working_data: list, pos: int) -> None:
@@ -498,7 +493,7 @@ class App:
         sin_table = np.sin(angles_rad)
         cos_table = np.cos(angles_rad)
 
-        for i,j,v in log_enumerate(working_data):
+        for j,v in enumerate(working_data):
             
             vis_gain = 0
             f = j * fps
@@ -508,10 +503,11 @@ class App:
 
             # zohladnenie ekvalizera:
             vis_gain = calculate_vis_gain(freqs, q, f)
+            vis_gain_multiplier = 10 ** (vis_gain / 20)
 
             color = np.clip((1 + j, 0, 255 - j), 0, 255)
             
-            line_length = v + (v * vis_gain)
+            line_length = (v * vis_gain_multiplier)
             line_length = 0 if line_length < 0 else line_length
             index = (counter + (pos // 4)) % len(sin_table)
 
@@ -664,12 +660,9 @@ class App:
 
                 # 3D-ish
                 elif self.vis_type == 2:
-                    # Pocet vizualizovanych "riadkov"; nad 25 to zacina sekat, ale je to in sync aj tak
+                    # Pocet vizualizovanych "riadkov"; nad 20 to zacina sekat, ale je to in sync aj tak
                     vis_num = 20
-                    #cela vizualizacia:
-                    for k in range(vis_num, 0, -1):
-                        # 1 riadok:
-                        self.__visualize_3d(rate, chunk, freq_interval, processed_vis_data, i+k, k, vis_num, scale_value)
+                    self.__visualize_3d(rate, chunk, freq_interval, processed_vis_data, i, vis_num, scale_value)
 
                 # kruhova
                 elif self.vis_type == 3:
