@@ -9,7 +9,6 @@ from io import BytesIO
 from enum import Enum
 from multiprocessing import Process, Queue, freeze_support
 from pedalboard import Pedalboard, PeakFilter, Limiter, Gain
-from math import log2
 from scipy.signal import resample_poly
 from audio_player import AudioPlayer
 
@@ -33,14 +32,6 @@ def load_frames_folder(path: str) -> list:
             img = pg.transform.smoothscale(img, (200, 200))
             frames.append(img)
     return frames
-
-def log_enumerate(iterable, start=1):
-        n = start + 1.000005
-        m = start
-        for elem in iterable:
-            yield n, m, elem
-            n += 1 / log2(n)
-            m += 1
 
 def calculate_vis_gain(freqs: dict, q: float, frequency: int) -> float:
     """
@@ -784,10 +775,14 @@ class App:
                     return
                 else:
                     next_index = self.currently_played_queue_index + 1
+        if next_index < 0:
+            next_index = len(self.queue) + next_index
 
         self.curr_audio_file = self.queue[next_index]
         self.currently_played_queue_index = self.queue.index(self.curr_audio_file)
-        self.control_panel.currently_played_queue_index = self.queue.index(self.curr_audio_file)
+
+        #synchronizacia logiky a GUI:
+        self.control_panel.currently_played_queue_index = self.currently_played_queue_index
         self.control_panel.mark_played()
         self.change_song(self.curr_audio_file)
 
@@ -887,6 +882,12 @@ class App:
         self.manager.rebuild_all_from_changed_theme_data()
         icon_path = "icons/loadingDark" if self.theme == 1 else "icons/loadingLight"
         self.loading_frames = load_frames_folder(icon_path)
+
+    def get_playing_queue(self) -> list:
+        """
+        Returns the list of current audio files to be played.
+        """
+        return self.queue.copy()
 
 
 

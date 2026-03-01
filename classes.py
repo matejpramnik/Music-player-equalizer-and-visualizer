@@ -83,7 +83,7 @@ class MusicControlPanel(Panel):
                  rect: pg.Rect,
                  manager,
                  freqs: dict,
-                 queue: list,
+                 orig_queue: list,
                  volume: float,
                  theme: int,
                  shuffle: bool,
@@ -91,7 +91,7 @@ class MusicControlPanel(Panel):
                  repeat_queue: bool):
         super().__init__(rect, manager)
         # config:
-        self.queue = queue
+        self.queue = orig_queue
         self.freqs = freqs
         self.theme = theme # 0=dark, 1=light
         self.shuffle = shuffle
@@ -453,35 +453,42 @@ class MusicControlPanel(Panel):
         :type file_pos_s: float
         :type file_length_s: float
         """
-        if self.currently_played_queue_index == len(self.queue) - 1 and self.next_btn.visible:
+        # zobrazenie/skrytie tlacidiel na next/previous
+        index = self.currently_played_queue_index
+        rep_queue = self.repeat_queue
+        q_len = len(self.queue)
+        state_name = state.name
+        if index == q_len - 1 and self.next_btn.visible and not rep_queue:
             self.next_btn.hide()
-        elif self.currently_played_queue_index < len(self.queue) - 1 and not self.next_btn.visible:
+        elif (index < q_len - 1 or rep_queue) and not self.next_btn.visible:
             self.next_btn.show()
-
-        if self.currently_played_queue_index == 0 and self.previous_btn.visible:
+        if index == 0 and self.previous_btn.visible and not rep_queue:
             self.previous_btn.hide()
-        elif self.currently_played_queue_index > 0 and not self.previous_btn.visible:
+        elif (index > 0 or rep_queue) and not self.previous_btn.visible:
             self.previous_btn.show()
 
-        if self.volume == 0.0 and "#mute_button" not in self.volume_btn.get_object_ids():
+        # speaker/mute
+        if self.volume == 0.0 and "#volume_button" in self.volume_btn.get_object_ids():
             self.volume_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                       object_id="#mute_button"))
         elif self.volume > 0.0 and "#mute_button" in self.volume_btn.get_object_ids():
             self.volume_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                       object_id="#volume_button"))
+        
+        # file progress
         # faktor 10000 kvoli zaokruhlovacej chybe, pozri self.file_progress
-        if state.name == "PLAYING":
+        if state_name == "PLAYING":
             wiper_val = (file_pos_s / file_length_s) * 10000
             if wiper_val >= 10000: wiper_val = 10000
             self.file_progress.wiper.set_current_value(wiper_val)
-        if state.name == "PLAYING" or state.name == "PAUSED":
+        if state_name == "PLAYING" or state_name == "PAUSED":
             pos = self.file_progress.wiper.get_current_value()
             self.time_progress_label.update_time_label(file_length_s, (file_length_s / 10000) * pos)
 
-        if state.name == "PLAYING" and "#play_button" in self.play_stop_btn.get_object_ids():
+        if state_name == "PLAYING" and "#play_button" in self.play_stop_btn.get_object_ids():
             self.play_stop_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                        object_id="#pause_button"))
-        elif not state.name == "PLAYING" and "#pause_button" in self.play_stop_btn.get_object_ids():
+        elif not state_name == "PLAYING" and "#pause_button" in self.play_stop_btn.get_object_ids():
             self.play_stop_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                        object_id="#play_button"))
         
@@ -493,15 +500,15 @@ class MusicControlPanel(Panel):
             self.song_name_label.show()
             self.artist_album_label.show()
 
-        if state.name == "DATA_LOADING":
+        if state_name == "DATA_LOADING":
             self.play_stop_btn.hide()
             self.file_progress.hide()
             self.time_progress_label.hide()
-        elif (state.name == "PLAYING" or state.name == "PAUSED") and not self.play_stop_btn.visible:
+        elif (state_name == "PLAYING" or state_name == "PAUSED") and not self.play_stop_btn.visible:
             self.play_stop_btn.show()
             self.file_progress.show()
             self.time_progress_label.show()
-        elif state.name == "INITIAL":
+        elif state_name == "INITIAL":
             self.play_stop_btn.hide()
             self.file_progress.hide()
             self.time_progress_label.hide()
@@ -510,6 +517,9 @@ class MusicControlPanel(Panel):
             self.file_name_label.hide()
             self.song_name_label.hide()
             self.artist_album_label.hide()
+            if self.playing_SongItem is not None:
+                self.playing_SongItem.change_object_id(pygame_gui.core.ObjectID(object_id="#SongItem_panel"))
+                self.playing_SongItem = None
 
     def handle_event(self, event: pg.Event, app: App):
         """
@@ -553,24 +563,32 @@ class MusicControlPanel(Panel):
                     self.shuffle_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                             object_id="#shuffle_enabled_button"))
                     app.change_queue_behaviour(shuffle=1)
+                    self.shuffle = True
                 elif "#shuffle_enabled_button" in self.shuffle_btn.object_ids:
                     self.shuffle_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                             object_id="#shuffle_disabled_button"))
                     app.change_queue_behaviour(shuffle=0)
+                    self.shuffle = False
                     
             elif event.ui_element == self.repeat_btn:
                 if "#repeat_disabled_button" in self.repeat_btn.object_ids:
                     self.repeat_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                             object_id="#repeat_enabled_button"))
                     app.change_queue_behaviour(repeat=2)
+                    self.repeat_queue = True
+                    self.repeat_one = False
                 elif "#repeat_enabled_button" in self.repeat_btn.object_ids:
                     self.repeat_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                             object_id="#repeat_one_button"))
                     app.change_queue_behaviour(repeat=1)
+                    self.repeat_queue = False
+                    self.repeat_one = True
                 elif "#repeat_one_button" in self.repeat_btn.object_ids:
                     self.repeat_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                             object_id="#repeat_disabled_button"))
                     app.change_queue_behaviour(repeat=0)
+                    self.repeat_queue = False
+                    self.repeat_one = False
 
             elif event.ui_element == self.next_btn:
                 if len(self.queue) > 1:
