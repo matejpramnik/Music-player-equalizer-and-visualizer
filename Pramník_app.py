@@ -7,12 +7,11 @@ import subprocess
 import wave
 from io import BytesIO
 from enum import Enum
+from pycaw.pycaw import AudioUtilities
 from multiprocessing import Process, Queue, freeze_support
 from pedalboard import Pedalboard, PeakFilter, Limiter, Gain
 from scipy.signal import resample_poly
 from audio_player import AudioPlayer
-
-
 
 
 def load_frames_folder(path: str) -> list:
@@ -261,6 +260,8 @@ class App:
     def __init__(self):
         # tento import musi byt az tu kvoli ImportError (circular import)
         from classes import MusicControlPanel, VisPanel
+
+        self.output_device = AudioUtilities.GetSpeakers()
 
         # zapamatany config
         try:
@@ -523,6 +524,7 @@ class App:
         self.initial_data_loaded = True
 
         # aby boli queues synchronizovane medzi App a MusicControlPanel
+        #  // nevolat // pred tym ako sa v control_panel vytvori queue GUI
         self.control_panel.queue = self.queue.copy()
 
         # loading animacia pomocne premenne
@@ -537,7 +539,14 @@ class App:
             self.manager.update(1 / self.fps)
             dt = self.clock.tick(self.fps)
 
-            # vsetky eventy pygame aj vsetkych panelov + update UI
+            # skontrolovat device change
+            device = AudioUtilities.GetSpeakers()
+            if device.id != self.output_device.id:
+                self.output_device = device
+                playing = self.player.get_busy()
+                self.player.restart_player(playing)
+
+            # vsetky eventy pygame a panelov + update UI
             self.control_panel.update_ui(self.state, self.player.get_position_s(), self.player.get_song_length_s())
             # synchronizacia:
             self.control_panel.currently_played_queue_index = self.currently_played_queue_index
@@ -883,11 +892,6 @@ class App:
         icon_path = "icons/loadingDark" if self.theme == 1 else "icons/loadingLight"
         self.loading_frames = load_frames_folder(icon_path)
 
-    def get_playing_queue(self) -> list:
-        """
-        Returns the list of current audio files to be played.
-        """
-        return self.queue.copy()
 
 
 

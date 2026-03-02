@@ -4,10 +4,10 @@ import sounddevice as sd
 from time import monotonic
 
 class AudioPlayer():
-    def __init__(self, audio: list, board:Pedalboard | None=None, rate=44100, chunkSize=16384, volume=0.5):
+    def __init__(self, audio: list, board:Pedalboard | None=None, rate=44100, chunk_size=16384, volume=0.5):
         self.audio = audio
         self.rate = rate
-        self.chunkSize = chunkSize
+        self.chunk_size = chunk_size
         self.board = board
         self.gain = volume
         
@@ -17,9 +17,8 @@ class AudioPlayer():
 
         self.playing = False
         self.lock = threading.Lock()
-        # chunk/block-size ked je <16384->eq crackling; ked je >16384->eq ma dlhu odozvu
-        self.t = threading.Thread(target=self._stream, args=(rate, chunkSize), daemon=True)
-        self.t.start()
+        # chunk/block-size ked je <16384 ->eq crackling; ked je >16384 ->eq ma dlhu odozvu
+        self._stream(rate, chunk_size)
 
     def _callback(self, outdata, frames, time, status):
         """
@@ -44,7 +43,7 @@ class AudioPlayer():
             gain = self.gain
 
         if self.board is not None:
-            chunk = self.board(chunk, self.rate, self.chunkSize)
+            chunk = self.board(chunk, self.rate, self.chunk_size)
 
         if len(chunk) < frames:
             outdata[:len(chunk)] = chunk * gain
@@ -55,7 +54,7 @@ class AudioPlayer():
 
     def _stream(self, rate: int, blocksize: int) -> None:
         """
-        Protected method, should not be called explicitly.\n
+        Protected method.\n
         Creates a sounddevice output stream.
 
         :param rate: Sampling rate of the audio.
@@ -63,13 +62,14 @@ class AudioPlayer():
         :type rate: integer
         :type blocksize: integer
         """
-        self.stream = sd.OutputStream(
-            samplerate=rate,
-            blocksize=blocksize,
-            channels=2,
-            latency="low",
-            device=None,
-            callback=self._callback)
+        with self.lock:
+            self.stream = sd.OutputStream(
+                samplerate=rate,
+                blocksize=blocksize,
+                channels=2,
+                latency="low",
+                device=None, # pouzije default device (prave zvoleny)
+                callback=self._callback)
         
     def play(self) -> None:
         """
@@ -170,11 +170,11 @@ class AudioPlayer():
         """
         Sets an audio source.
 
-        :param audio: Raw (normalized) audio data for the audio player.
+        :param audio: Raw audio data for the audio player.
         :type audio: numpy array 
         """
         with self.lock:
-            self.audio = self.board(audio, self.rate)
+            self.audio = audio
 
     def set_volume(self, gain: float) -> None:
         """
@@ -190,5 +190,22 @@ class AudioPlayer():
         """
         Terminates the output stream; cleanup.
         """
+        self.stop()
         self.stream.close()
-        self.t.join()
+
+    def restart_player(self, play=False) -> None:
+        """
+        Restarts the audio player stream.
+        Use in case of output device change.
+
+        :param play: Should continue playing?
+        :type play: bool
+        """
+        pos = self.get_position_s()
+
+        self.terminate_player()
+        self._stream(self.rate, self.chunk_size)
+
+        self.seek(pos)
+        if play:
+            self.play()
