@@ -409,16 +409,27 @@
         }
     },
 
-    "#burger_menu_panel": {
+    "@menu_panels": {
         "colours": {
             "dark_bg": "#0A0C10FF",
-            "normal_border": "#DADFEA"
+            "normal_border": "#DADFEAFF"
         },
         "misc": {
             "shape": "rounded_rectangle",
-            "border_width": "1",
-            "shadow_width": "0",
+            "border_width": "2",
+            "shadow_width": "1"
+        }
+    },
+
+    "#burger_menu_panel": {
+        "misc": {
             "shape_corner_radius": "0, 0, 0, 10"
+        }
+    },
+
+    "#window_size_menu_panel": {
+        "misc": {
+            "shape_corner_radius": "0, 10, 10, 10"
         }
     },
 
@@ -629,6 +640,74 @@
             },
             "selected_image": {
                 "path": "icons/theme.png",
+                "position": [0.05, 0.5]
+            }
+        }
+    },
+
+    "#window_size_menu_choice": {
+        "images": {
+            "normal_image": {
+                "path": "icons/window.png",
+                "position": [0.05, 0.5]
+            },
+            "hovered_image": {
+                "path": "icons/windowBig.png",
+                "position": [0.05, 0.5]
+            },
+            "selected_image": {
+                "path": "icons/window.png",
+                "position": [0.05, 0.5]
+            }
+        }
+    },
+
+    "#small_win_choice": {
+        "images": {
+            "normal_image": {
+                "path": "icons/small.png",
+                "position": [0.05, 0.5]
+            },
+            "hovered_image": {
+                "path": "icons/smallBig.png",
+                "position": [0.05, 0.5]
+            },
+            "selected_image": {
+                "path": "icons/small.png",
+                "position": [0.05, 0.5]
+            }
+        }
+    },
+
+    "#med_win_choice": {
+        "images": {
+            "normal_image": {
+                "path": "icons/medium.png",
+                "position": [0.05, 0.5]
+            },
+            "hovered_image": {
+                "path": "icons/mediumBig.png",
+                "position": [0.05, 0.5]
+            },
+            "selected_image": {
+                "path": "icons/medium.png",
+                "position": [0.05, 0.5]
+            }
+        }
+    },
+
+    "#large_win_choice": {
+        "images": {
+            "normal_image": {
+                "path": "icons/large.png",
+                "position": [0.05, 0.5]
+            },
+            "hovered_image": {
+                "path": "icons/largeBig.png",
+                "position": [0.05, 0.5]
+            },
+            "selected_image": {
+                "path": "icons/large.png",
                 "position": [0.05, 0.5]
             }
         }

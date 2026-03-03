@@ -17,6 +17,12 @@ class Panel():
             starting_height=1,
             object_id=pygame_gui.core.ObjectID(class_id="@main_panels"))
 
+    def build_ui(self) -> None:
+        """
+        Builds all of the UI elements.
+        """
+        pass
+
     def handle_event(self, event, app):
         pass
 
@@ -110,9 +116,6 @@ class MusicControlPanel(Panel):
         self.build_ui()
 
     def build_ui(self) -> None:
-        """
-        Builds all of the UI elements.
-        """
         
         self.play_stop_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(0, self.surface.get_height() - 70, 40, 40),
@@ -258,10 +261,11 @@ class MusicControlPanel(Panel):
         )
 
         self.burger_menu_panel = pygame_gui.elements.UIPanel(
-            relative_rect=pg.Rect(0, 0, 380, 420),
+            relative_rect=pg.Rect(0, 0, 390, 480),
             manager=self.manager,
             starting_height=10,
-            object_id="#burger_menu_panel",
+            object_id=pygame_gui.core.ObjectID(class_id="@menu_panels",
+                                               object_id="#burger_menu_panel"),
             container=self.panel
         )
         self.burger_menu_panel.hide()
@@ -303,7 +307,7 @@ class MusicControlPanel(Panel):
         )
 
         self.change_vis_btn = pygame_gui.elements.UIButton(
-            relative_rect=pg.Rect(70, self.toggle_eq_panel_btn.rect.bottom, self.burger_menu_panel.rect.width - 75, 60),
+            relative_rect=pg.Rect(70, self.toggle_eq_panel_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
             text="Change visualization",
             manager=self.manager,
             container=self.burger_menu_panel,
@@ -312,12 +316,65 @@ class MusicControlPanel(Panel):
         )
 
         self.switch_theme_btn = pygame_gui.elements.UIButton(
-            relative_rect=pg.Rect(70, self.change_vis_btn.rect.bottom, self.burger_menu_panel.rect.width - 75, 60),
+            relative_rect=pg.Rect(70, self.change_vis_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
             text="Switch theme",
             manager=self.manager,
             container=self.burger_menu_panel,
             object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
                                                object_id="#switch_theme_choice")
+        )
+
+    # window size menu
+        self.window_size_menu_btn = pygame_gui.elements.UIButton(
+            object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
+                                               object_id="#window_size_menu_choice"),
+            relative_rect=pg.Rect(70, self.switch_theme_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
+            text="Window size",
+            manager=self.manager,
+            container=self.burger_menu_panel
+        )
+
+        self.window_size_menu_panel = pygame_gui.elements.UIPanel(
+            relative_rect=pg.Rect(self.burger_menu_panel.rect.right, self.window_size_menu_btn.rect.top, 200, 190),
+            manager=self.manager,
+            starting_height=10,
+            object_id=pygame_gui.core.ObjectID(class_id="@menu_panels",
+                                               object_id="#window_size_menu_panel"),
+            container=self.panel
+        )
+        self.window_size_menu_panel.hide()
+
+        self.small_window_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(10, 12, self.window_size_menu_panel.rect.width - 25, 50),
+            text="Small",
+            manager=self.manager,
+            container=self.window_size_menu_panel,
+            object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
+                                               object_id="#small_win_choice")
+        )
+
+        self.medium_window_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(10,
+                                  self.small_window_btn.get_relative_rect().bottom + 5,
+                                  self.window_size_menu_panel.rect.width - 25,
+                                  50),
+            text="Medium",
+            manager=self.manager,
+            container=self.window_size_menu_panel,
+            object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
+                                               object_id="#med_win_choice")
+        )
+
+        self.large_window_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(10,
+                                  self.medium_window_btn.get_relative_rect().bottom + 5,
+                                  self.window_size_menu_panel.rect.width - 25,
+                                  50),
+            text="Large",
+            manager=self.manager,
+            container=self.window_size_menu_panel,
+            object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
+                                               object_id="#large_win_choice")
         )
 #################################################################################
 
@@ -603,6 +660,12 @@ class MusicControlPanel(Panel):
                     self.burger_menu_panel.hide()
                 else:
                     self.burger_menu_panel.show()
+            
+            elif event.ui_element == self.window_size_menu_btn:
+                if self.window_size_menu_panel.visible:
+                    self.window_size_menu_panel.hide()
+                else:
+                    self.window_size_menu_panel.show()
 
             elif event.ui_element == self.open_dir_btn:
                 # zasekne sa ui pri vacsich priecinkoch; pygame_gui nie je thread safe
@@ -645,6 +708,15 @@ class MusicControlPanel(Panel):
                 self.burger_menu_panel.hide()
                 app.switch_theme()
 
+            elif event.ui_element == self.small_window_btn:
+                app.change_window_size(1150, 768)
+            
+            elif event.ui_element == self.medium_window_btn:
+                app.change_window_size(1600, 960)
+
+            elif event.ui_element == self.large_window_btn:
+                app.change_window_size(1920, 1080)
+
             elif "#reset_single_button" in event.ui_element.object_ids:
                 event.ui_element.parent_element.slider.set_current_value(0)
                 freq = event.ui_element.parent_element.frequency
@@ -677,16 +749,14 @@ class MusicControlPanel(Panel):
                 app.set_player_position(value)
 
         elif event.type == pg.MOUSEBUTTONDOWN:
-            if not self.burger_menu_panel.rect.collidepoint(event.pos):
+            if not self.burger_menu_panel.rect.collidepoint(event.pos) and not self.window_size_menu_panel.rect.collidepoint(event.pos):
                 self.burger_menu_panel.hide()
+                self.window_size_menu_panel.hide()
 
 
 class VisPanel(Panel):
     def __init__(self, rect, manager):
         super().__init__(rect, manager)
-        
-    def handle_event(self, event, app):
-        super().handle_event(event, app)
 
 
 class SongItem(pygame_gui.elements.UIPanel):

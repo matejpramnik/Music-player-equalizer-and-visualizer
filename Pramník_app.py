@@ -291,8 +291,6 @@ class App:
         self.vis_type = config_data["vis_type"] if config_data != None else 1
 
         self.currently_played_queue_index = 0
-        self.min_width = 1150
-        self.min_height = 768
         self.vis_start = 650
 
         # pygame inicializacia
@@ -325,7 +323,7 @@ class App:
         self.player.set_board(self.equalizer_board)
 
         # pygame window/display veci
-        self.display = pg.display.set_mode((self.screen_width, self.screen_height), flags=pg.RESIZABLE)
+        self.display = pg.display.set_mode((self.screen_width, self.screen_height))
         controls_rect = pg.Rect(0, 0, self.vis_start, self.screen_height)
         drawing_rect = pg.Rect(self.vis_start, 0, self.screen_width - self.vis_start, self.screen_height)
 
@@ -533,11 +531,6 @@ class App:
         frame_delay = 25
 
         while self.running:
-            # "vymazanie" predoslej iteracie vizualizacie (refresh) + clock tick:
-            self.vis_panel.surface.fill((232, 241, 242) if self.theme == 1 else (10,12,16))
-            self.manager.draw_ui(self.display)
-            self.manager.update(1 / self.fps)
-            dt = self.clock.tick(self.fps)
 
             # skontrolovat device change
             device = AudioUtilities.GetSpeakers()
@@ -545,33 +538,11 @@ class App:
                 self.output_device = device
                 playing = self.player.get_busy()
                 self.player.restart_player(playing)
-
-            # vsetky eventy pygame a panelov + update UI
-            self.control_panel.update_ui(self.state, self.player.get_position_s(), self.player.get_song_length_s())
+            
             # synchronizacia:
             self.control_panel.currently_played_queue_index = self.currently_played_queue_index
+            # vsetky eventy pygame a panelov + update UI
             for event in pg.event.get():
-                if event.type == pg.VIDEORESIZE:
-                    width, height = event.size
-
-                    if height < self.min_height:
-                        self.screen_height = self.min_height
-                        self.display = pg.display.set_mode((self.screen_width, self.screen_height), flags=pg.RESIZABLE)
-                    else:
-                        self.screen_height = height
-
-                    if width < self.min_width:
-                        self.screen_width = self.min_width
-                        self.display = pg.display.set_mode((self.screen_width, self.screen_height), flags=pg.RESIZABLE)
-                    else:
-                        self.screen_width = width
-                    
-                    
-                    self.manager.set_window_resolution((self.screen_width, self.screen_height))
-                    self.control_panel.redraw(self.vis_start, self.screen_height)
-                    self.vis_panel.redraw(self.screen_width - self.vis_start, self.screen_height)
-                    self.control_panel.mark_played()
-
                 if event.type == pg.QUIT:
                     self.running = False
                     pg.quit()
@@ -597,7 +568,12 @@ class App:
                 self.control_panel.handle_event(event, self)
                 #self.vis_panel.handle_event(event, self)
 
-            
+            # "vymazanie" predoslej iteracie vizualizacie (refresh) + clock tick:
+            self.vis_panel.surface.fill((232, 241, 242) if self.theme == 1 else (10,12,16))
+            self.manager.update(1 / self.fps)
+            self.manager.draw_ui(self.display)
+            dt = self.clock.tick(self.fps)
+            self.control_panel.update_ui(self.state, self.player.get_position_s(), self.player.get_song_length_s())
 
             if self.state == State.DATA_LOADING and not self.thread_retval.empty():
                 self.vis_data = self.thread_retval.get()
@@ -673,8 +649,9 @@ class App:
 
 
             # nakreslenie, zaobrazenie (musi to byt v tomto poradi):
-            self.display.blit(self.control_panel.surface, self.vis_panel.rect.topleft)
             self.display.blit(self.vis_panel.surface, self.vis_panel.rect.topleft)
+            self.display.blit(self.control_panel.surface, self.control_panel.rect.topleft)
+            
             pg.display.flip()
             
     
@@ -892,6 +869,23 @@ class App:
         icon_path = "icons/loadingDark" if self.theme == 1 else "icons/loadingLight"
         self.loading_frames = load_frames_folder(icon_path)
 
+    def change_window_size(self, width: int, height: int) -> None:
+        """
+        Changes Pygame window size.
+
+        :param width: New width
+        :param height: New height
+        :type width: integer
+        :type height: integer
+        """
+        self.screen_width = width
+        self.screen_height = height
+        self.display = pg.display.set_mode((width, height))
+
+        self.manager.set_window_resolution((self.screen_width, self.screen_height))
+        self.control_panel.redraw(self.vis_start, self.screen_height)
+        self.vis_panel.redraw(self.screen_width - self.vis_start, self.screen_height)
+        self.control_panel.mark_played()
 
 
 
