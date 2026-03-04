@@ -81,10 +81,8 @@ def calculate_magnitudes(datas: np.ndarray) -> np.ndarray:
     :type datas: numpy array
     """
 
-    # funguje pre base a 3D vizualizaciu
-    # pochrume data a vrati uz udaje pre vysky ciar
-
-    window = np.hanning(len(datas))     # hanning window function sa casto pouziva
+    # hanning window function sa casto pouziva, ocisti data, mensie side lobes, cistejsi vysledok
+    window = np.hanning(len(datas))
     data = datas * window
 
     # rfft uz vracia iba "polovicu" frekvencii (rate / 2)
@@ -405,6 +403,7 @@ class App:
             x = j * factor + 5
             y = self.screen_height - (v * vis_gain_multiplier)
             y = self.screen_height if y >= self.screen_height else 0 if y <= 0 else y
+            x, y = int(round(x)), int(round(y))
 
             pg.draw.line(self.vis_panel.surface, color, (x, self.screen_height - 15), (x, y - 15), width = 2)
             counter += 1
@@ -455,6 +454,7 @@ class App:
                 x = j * factor + level_offset * (iter - 1) + 5
                 y = current_iter_y - (v * vis_gain_multiplier)
                 y = current_iter_y if y >= current_iter_y else 0 if y <= 0 else y
+                x, y = int(round(x)), int(round(y))
 
                 # zmena sirky vyrazne spomaluje vykreslovanie
                 pg.draw.line(self.vis_panel.surface, color, (x, current_iter_y), (x, y), width = 1)
@@ -505,8 +505,9 @@ class App:
             y_s = y_start + 35 * cos_table[index]
             x = line_length * sin_table[index]
             y = line_length * cos_table[index]
+            e_x, e_y = int(round(x_s + x)), int(round(y_s + y))
             
-            pg.draw.aaline(self.vis_panel.surface, color, (x_s, y_s), (x_s + x, y_s + y), width = 3)
+            pg.draw.aaline(self.vis_panel.surface, color, (x_s, y_s), (e_x, e_y), width = 3)
             counter += 1
 
 

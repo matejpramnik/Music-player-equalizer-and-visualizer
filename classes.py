@@ -715,7 +715,7 @@ class MusicControlPanel(Panel):
                 app.change_window_size(1600, 960)
 
             elif event.ui_element == self.large_window_btn:
-                app.change_window_size(1920, 1080)
+                app.change_window_size(1920, 1020)
 
             elif "#reset_single_button" in event.ui_element.object_ids:
                 event.ui_element.parent_element.slider.set_current_value(0)
