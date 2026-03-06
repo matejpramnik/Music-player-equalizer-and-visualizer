@@ -41,10 +41,9 @@ class AudioPlayer():
             chunk = self.audio[self.position:(self.position + frames)]
             self.position += frames
             gain = self.gain
-            board = self.board
 
         if self.board is not None:
-            chunk = board(chunk, self.rate, self.chunk_size)
+            chunk = self.board(chunk, self.rate, self.chunk_size)
 
         if len(chunk) < frames:
             outdata[:len(chunk)] = chunk * gain
@@ -100,7 +99,7 @@ class AudioPlayer():
         """
         with self.lock:
             self.playing = False
-            self.stream.abort()
+        self.stream.abort()
         time = self.get_position_s()
         self.seek(time)
 
@@ -113,7 +112,7 @@ class AudioPlayer():
             self.position = 0
             self.last_callback_time = 0
             self.position_at_last_cb = self.position
-            self.stream.abort()
+        self.stream.abort()
 
     def seek(self, seconds: float) -> None:
         """
@@ -145,10 +144,9 @@ class AudioPlayer():
             pos = self.position_at_last_cb
             t0 = self.last_callback_time
             playing = self.playing
-
-        with self.lock: 
-            if paused:
-                pos = self.position
+            
+        if paused:
+            pos = self.position
 
         if not playing or t0 == 0:
             return pos / self.rate
@@ -217,8 +215,8 @@ class AudioPlayer():
             playing = self.playing
             pos = self.position
             self.playing = False
-            self.stream.abort()
-            self.stream.close()
+        self.stream.abort()
+        self.stream.close()
 
         self.terminate_player()
         self._stream(self.rate, self.chunk_size)

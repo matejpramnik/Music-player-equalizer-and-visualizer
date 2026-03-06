@@ -541,6 +541,7 @@ class App:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.running = False
+                    self.player.terminate_player()
                     pg.quit()
                     # zapamatanie konfiguracie uzivatela
                     save_config = {
