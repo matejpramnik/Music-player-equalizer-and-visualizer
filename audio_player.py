@@ -27,8 +27,8 @@ class AudioPlayer():
         """
         now = monotonic()
 
-        if status:
-            print(status)
+        # if status:
+        #     print(status)
 
         with self.lock:
             if not self.playing:
@@ -41,9 +41,10 @@ class AudioPlayer():
             chunk = self.audio[self.position:(self.position + frames)]
             self.position += frames
             gain = self.gain
+            board = self.board
 
         if self.board is not None:
-            chunk = self.board(chunk, self.rate, self.chunk_size)
+            chunk = board(chunk, self.rate, self.chunk_size)
 
         if len(chunk) < frames:
             outdata[:len(chunk)] = chunk * gain
@@ -51,6 +52,15 @@ class AudioPlayer():
             raise sd.CallbackStop
         else:
             outdata[:] = chunk * gain
+
+    def _on_finished(self):
+        """
+        Protected method.\n
+        Sets playing to False in case the restart_stream() method is called after the stream has ended.
+        """
+        with self.lock:
+            self.playing = False
+            self.position = 0
 
     def _stream(self, rate: int, blocksize: int) -> None:
         """
@@ -69,7 +79,8 @@ class AudioPlayer():
                 channels=2,
                 latency="low",
                 device=None, # pouzije default device (prave zvoleny)
-                callback=self._callback)
+                callback=self._callback,
+                finished_callback=self._on_finished)
         
     def play(self) -> None:
         """
@@ -134,9 +145,10 @@ class AudioPlayer():
             pos = self.position_at_last_cb
             t0 = self.last_callback_time
             playing = self.playing
-            
-        if paused:
-            pos = self.position
+
+        with self.lock: 
+            if paused:
+                pos = self.position
 
         if not playing or t0 == 0:
             return pos / self.rate
@@ -201,11 +213,16 @@ class AudioPlayer():
         :param play: Should continue playing?
         :type play: bool
         """
-        pos = self.get_position_s()
+        with self.lock:
+            playing = self.playing
+            pos = self.position
+            self.playing = False
+            self.stream.abort()
+            self.stream.close()
 
         self.terminate_player()
         self._stream(self.rate, self.chunk_size)
 
-        self.seek(pos)
-        if play:
+        self.seek(pos / self.rate)
+        if play or playing:
             self.play()

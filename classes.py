@@ -167,7 +167,7 @@ class MusicControlPanel(Panel):
                 object_id="#repeat_one_button" if self.repeat_one else "#repeat_enabled_button" if self.repeat_queue else "#repeat_disabled_button")
         )
        
-        self.volume_slider = pygame_gui.elements.UIHorizontalSlider(
+        self.volume_slider = Slider(
             relative_rect=pg.Rect(-130, self.surface.get_height() - 60, 120, 20),
             manager=self.manager,
             container=self.panel,
@@ -175,7 +175,7 @@ class MusicControlPanel(Panel):
             value_range=(0, 1),
             click_increment=0.01,
             anchors={"centerx": "centerx"},
-            object_id="#volume_slider"
+            object_id=pygame_gui.core.ObjectID(object_id="#volume_slider")
         )
 
         self.volume_btn = pygame_gui.elements.UIButton(
@@ -537,9 +537,9 @@ class MusicControlPanel(Panel):
         if state_name == "PLAYING":
             wiper_val = (file_pos_s / file_length_s) * 10000
             if wiper_val >= 10000: wiper_val = 10000
-            self.file_progress.wiper.set_current_value(wiper_val)
+            self.file_progress.set_current_value(wiper_val)
         if state_name == "PLAYING" or state_name == "PAUSED":
-            pos = self.file_progress.wiper.get_current_value()
+            pos = self.file_progress.get_current_value()
             self.time_progress_label.update_time_label(file_length_s, (file_length_s / 10000) * pos)
 
         if state_name == "PLAYING" and "#play_button" in self.play_stop_btn.get_object_ids():
@@ -951,6 +951,21 @@ class Slider(pygame_gui.elements.UIPanel):
                          anchors=anchors)
         self.build_ui(relative_rect, manager, value_range, start_value, click_increment)
         self.current_value = self.wiper.get_current_value()
+
+    def set_current_value(self, new_value: float | int, warn: bool=True) -> None:
+        """
+        Set the current value of the slider.
+
+        :param new_value: Value to set the slider to
+        :param warn: set to 'False' to suppress the default warning, instead the value will be clamped.
+        """
+        self.wiper.set_current_value(new_value, warn)
+
+    def get_current_value(self) -> float | int:
+        """
+        Get the current slider value.
+        """
+        return self.wiper.get_current_value()
 
     def build_ui(self, rect, manager, value_range, start_value, click_increment):
         """

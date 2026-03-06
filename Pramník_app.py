@@ -43,15 +43,14 @@ def calculate_vis_gain(freqs: dict, q: float, frequency: int) -> float:
     :type q: float
     :type frequency: integer
     """
-    q2 = q * q
     for center_freq, gain in freqs:
         if abs(gain) <= 1e-12: continue
         bw = center_freq / q
         if (center_freq - bw) <= frequency <= (center_freq + bw):
             # gain je v intervale <-120, 120>
             # 1 / 10 sluzi ako normalizovanie do intervalu <-12, 12>, tieto hodnoty moze vis_gain nadobudat
-            #return gain / 10 * (1 + q2 * ((frequency / center_freq) - (center_freq / frequency))**2)
-            return gain / (10 * (1 + q2 * ((frequency**2 - center_freq**2)**2 / (frequency**2 * center_freq**2))))
+            #return gain / (10 * (1 + q2 * ((frequency / center_freq) - (center_freq / frequency))**2))
+            return gain / (10 * (1 + q * q * ((frequency**2 - center_freq**2)**2 / (frequency**2 * center_freq**2))))
     return 0
 
 def normalize_audio(samples: np.ndarray) -> np.ndarray:
@@ -419,26 +418,22 @@ class App:
         f_max = freq_interval[1]
         fps = rate / chunk
         factor = self.vis_panel.rect.width / 261
-        level_offset = self.vis_panel.rect.width / 111
+        level_offset = self.vis_panel.rect.width / 150
 
         q = self.eq_q_factor
         freqs = self.freqs.items()
 
         for iter in range(vis_num, 0, -1):
-            pos = position + iter
-            if 0 <= pos < len(data):
-                working_data = data[pos]
-            else:
-                working_data = data[pos - vis_num - iter]
+            working_data = data[position + iter] if (0 <= (position + iter) < len(data)) else data[position - vis_num]
             working_data = working_data * scale_value
 
             r = max(0, 255 - iter * 5)
-            g = 30
+            g = 20
             b = min(255, 100 + iter * 3)
             a = min(255, 255 // iter + 40)
             color = (r, g, b, a)
 
-            current_iter_y = self.screen_height - (23 * iter)
+            current_iter_y = self.screen_height - (35 * iter)
 
             for j,v in enumerate(working_data):
                 
@@ -613,7 +608,7 @@ class App:
                 if self.state == State.PAUSED: curr = self.player.get_position_s(True)
                 else: curr = self.player.get_position_s()
 
-                # davam -30, aby to clovek stihol vidiet
+                # davam offset -30, aby bolo syncnute
                 i = int(curr * fps - 30)
                 if i > len(processed_vis_data) - 1:
                     # cely audio subor sa uz prehral/vizualizoval
@@ -637,8 +632,8 @@ class App:
 
                 # 3D-ish
                 elif self.vis_type == 2:
-                    # Pocet vizualizovanych "riadkov"; nad 20 to zacina sekat, ale je to in sync aj tak
-                    vis_num = 20
+                    # Pocet vizualizovanych "riadkov"; nad 15 to zacina sekat s eq, ale je to in sync aj tak
+                    vis_num = 12
                     self.__visualize_3d(rate, chunk, freq_interval, processed_vis_data, i, vis_num, scale_value)
 
                 # kruhova

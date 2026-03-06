@@ -63,13 +63,14 @@
 
     "#volume_slider": {
         "colours": {
-            "normal_border": "#B8C0D9",
-            "dark_bg": "#F5F7FA"
+            "dark_bg": "#00000000",
+            "normal_border": "#00000000",
+            "hovered_bg": "#00000000",
+            "hovered_border": "#00000000"
         },
         "misc": {
-            "shape": "rounded_rectangle",
-            "shadow_width": "0",
-            "enable_arrow_buttons": "0"
+            "border_width": "0",
+            "shadow_width": "0"
         }
     },
 
@@ -543,8 +544,9 @@
         "misc": {
             "shape": "rounded_rectangle",
             "shadow_width": "0",
-            "shape_corner_radius": "10",
-            "text_horiz_alignment": "right",
+            "shape_corner_radius": "8",
+            "text_horiz_alignment": "left",
+            "text_horiz_alignment_padding": "60",
             "text_vert_alignment": "center"
         },
         "font": {
