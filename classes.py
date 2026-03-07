@@ -605,12 +605,12 @@ class MusicControlPanel(Panel):
                     app.change_volume(0.0)
                     self.last_volume = self.volume
                     self.volume = 0.0
-                    self.volume_slider.set_current_value(self.volume)
+                    self.volume_slider.set_current_value(0.0)
                     self.volume_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                             object_id="#mute_button"))
-                elif "#mute_button" in self.volume_btn.object_ids:
-                    app.change_volume(self.volume)
+                elif "#mute_button" in self.volume_btn.object_ids and self.last_volume > 0.0:
                     self.volume = self.last_volume
+                    app.change_volume(self.volume)
                     self.volume_slider.set_current_value(self.volume)
                     self.volume_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                             object_id="#volume_button"))
@@ -742,6 +742,7 @@ class MusicControlPanel(Panel):
             elif "#volume_slider" in event.ui_element.object_ids:
                 value = event.value
                 self.volume = value
+                self.last_volume = value
                 app.change_volume(value)
 
             elif "#audio_file_progress_slider" in event.ui_element.object_ids:
@@ -749,9 +750,16 @@ class MusicControlPanel(Panel):
                 app.set_player_position(value)
 
         elif event.type == pg.MOUSEBUTTONDOWN:
-            if not self.burger_menu_panel.rect.collidepoint(event.pos) and not self.window_size_menu_panel.rect.collidepoint(event.pos):
-                self.burger_menu_panel.hide()
-                self.window_size_menu_panel.hide()
+            window_panel_opened = self.window_size_menu_panel.visible
+            burger_menu_opened = self.burger_menu_panel.visible
+
+            if not window_panel_opened:
+                if burger_menu_opened and not self.burger_menu_panel.rect.collidepoint(event.pos):
+                    self.burger_menu_panel.hide()
+            else:
+                if not self.burger_menu_panel.rect.collidepoint(event.pos) and not self.window_size_menu_panel.rect.collidepoint(event.pos):
+                    self.burger_menu_panel.hide()
+                    self.window_size_menu_panel.hide()
 
 
 class VisPanel(Panel):
