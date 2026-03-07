@@ -114,6 +114,19 @@
         }
     },
 
+    "#slider_line_progress": {
+        "colours": {
+            "dark_bg": "#1B98E0FF",
+            "normal_border": "#1B98E0FF"
+        },
+        "misc": {
+            "shape": "rounded_rectangle",
+            "shape_corner_radius": "2",
+            "shadow_width": "0",
+            "border_width": "0"
+        }
+    },
+
     "#slider_wiper": {
         "colours": {
             "normal_border": "#00000000",
@@ -123,9 +136,26 @@
         },
         "misc": {
             "enable_arrow_buttons": "0",
-            "sliding_button_width": "10",
+            "sliding_button_width": "7",
+            "shape_corner_radius": "2",
             "border_width": "0",
             "shadow_width": "0"
+        }
+    },
+
+    "#slider_wiper.#sliding_button": {
+        "colours": {
+            "normal_bg": "#1B98E0FF",
+            "hovered_bg": "#247BA0FF",
+            "selected_bg": "#1B98E0FF",
+            "active_bg": "#6D90A0FF",
+            "normal_border": "#1B98E0FF",
+            "hovered_border": "#247BA0FF",
+            "selected_border": "#1B98E0FF",
+            "active_border": "#6D90A0FF"
+        },
+        "misc": {
+            "shape": "rounded_rectangle"
         }
     },
 
@@ -476,8 +506,8 @@
             "dark_bg": "#00000000"
         },
         "font": {
-            "name": "tw_cen_mt",
-            "size": "18"
+            "name": "Inter",
+            "size": "15"
         },
         "misc": {
             "text_vert_alignment": "top",
@@ -498,29 +528,29 @@
 
     "#huge_label": {
         "font": {
-            "name": "tw_cen_mt",
-            "size": "34"
+            "name": "Inter",
+            "size": "30"
         }
     },
 
     "#big_label": {
         "font": {
-            "name": "tw_cen_mt",
-            "size": "26"
+            "name": "Inter",
+            "size": "21"
         }
     },
 
     "#normal_label": {
         "font": {
-            "name": "tw_cen_mt",
-            "size": "20"
+            "name": "Inter",
+            "size": "17"
         }
     },
 
     "#eq_label": {
         "font": {
-            "name": "tw_cen_mt",
-            "size": "19"
+            "name": "Inter",
+            "size": "16"
         },
         "colours": {
             "dark_bg": "#00000000",
@@ -550,8 +580,8 @@
             "text_vert_alignment": "center"
         },
         "font": {
-            "name": "tw_cen_mt",
-            "size": "26"
+            "name": "Inter",
+            "size": "22"
         }
     },
 

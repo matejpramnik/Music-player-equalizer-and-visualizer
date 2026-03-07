@@ -118,7 +118,7 @@ class MusicControlPanel(Panel):
     def build_ui(self) -> None:
         
         self.play_stop_btn = pygame_gui.elements.UIButton(
-            relative_rect=pg.Rect(0, self.surface.get_height() - 70, 40, 40),
+            relative_rect=pg.Rect(0, self.surface.get_height() - 80, 60, 60),
             text="",
             manager=self.manager,
             container=self.panel,
@@ -128,7 +128,7 @@ class MusicControlPanel(Panel):
         )
 
         self.next_btn = pygame_gui.elements.UIButton(
-            relative_rect=pg.Rect(40, self.surface.get_height() - 70, 40, 40),
+            relative_rect=pg.Rect(55, self.surface.get_height() - 70, 40, 40),
             text="",
             manager=self.manager,
             container=self.panel,
@@ -138,7 +138,7 @@ class MusicControlPanel(Panel):
         )
 
         self.previous_btn = pygame_gui.elements.UIButton(
-            relative_rect=pg.Rect(-40, self.surface.get_height() - 70, 40, 40),
+            relative_rect=pg.Rect(-55, self.surface.get_height() - 70, 40, 40),
             text="",
             manager=self.manager,
             container=self.panel,
@@ -148,7 +148,7 @@ class MusicControlPanel(Panel):
         )
 
         self.shuffle_btn = pygame_gui.elements.UIButton(
-            relative_rect=pg.Rect(80, self.surface.get_height() - 70, 40, 40),
+            relative_rect=pg.Rect(160, self.surface.get_height() - 70, 40, 40),
             text="",
             manager=self.manager,
             container=self.panel,
@@ -158,7 +158,7 @@ class MusicControlPanel(Panel):
         )
 
         self.repeat_btn = pygame_gui.elements.UIButton(
-            relative_rect=pg.Rect(120, self.surface.get_height() - 70, 40, 40),
+            relative_rect=pg.Rect(215, self.surface.get_height() - 70, 40, 40),
             text="",
             manager=self.manager,
             container=self.panel,
@@ -168,7 +168,7 @@ class MusicControlPanel(Panel):
         )
        
         self.volume_slider = Slider(
-            relative_rect=pg.Rect(-130, self.surface.get_height() - 60, 120, 20),
+            relative_rect=pg.Rect(-180, self.surface.get_height() - 60, 85, 20),
             manager=self.manager,
             container=self.panel,
             start_value=self.volume,
@@ -179,7 +179,7 @@ class MusicControlPanel(Panel):
         )
 
         self.volume_btn = pygame_gui.elements.UIButton(
-            relative_rect=pg.Rect(-210, self.surface.get_height() - 70, 40, 40),
+            relative_rect=pg.Rect(-240, self.surface.get_height() - 70, 40, 40),
             text="",
             manager=self.manager,
             container=self.panel,
@@ -198,18 +198,8 @@ class MusicControlPanel(Panel):
                                                object_id="#huge_label")
         )
 
-        self.file_name_label = pygame_gui.elements.UILabel(
-            relative_rect=pg.Rect(0, self.song_name_label.rect.bottom, -1, -1),
-            text="",
-            manager=self.manager,
-            container=self.panel,
-            anchors={"centerx": "centerx"},
-            object_id=pygame_gui.core.ObjectID(class_id="@SongItem_labels",
-                                               object_id="#normal_label")
-        )
-
         self.artist_album_label = pygame_gui.elements.UILabel(
-            relative_rect=pg.Rect(0, self.file_name_label.rect.bottom, -1, -1),
+            relative_rect=pg.Rect(0, self.song_name_label.rect.bottom + 10, -1, -1),
             text="",
             manager=self.manager,
             container=self.panel,
@@ -230,10 +220,20 @@ class MusicControlPanel(Panel):
             object_id="#audio_file_progress_slider"
         )
 
-        self.time_progress_label = TimeProgressUILabel(
-            relative_rect=pg.Rect(self.file_progress.rect.left - 120, self.artist_album_label.rect.bottom + 20, 120, 25),
+        self.time_progress_label = TimeUILabel(
+            relative_rect=pg.Rect(-200, self.artist_album_label.rect.bottom + 20, 120, 25),
             container=self.panel,
-            manager=self.manager
+            manager=self.manager,
+            anchors={"centerx": "centerx"},
+            object_id=pygame_gui.core.ObjectID(object_id="#eq_label")
+        )
+
+        self.full_time_label = TimeUILabel(
+            relative_rect=pg.Rect(200, self.artist_album_label.rect.bottom + 20, 120, 25),
+            container=self.panel,
+            manager=self.manager,
+            anchors={"centerx": "centerx"},
+            object_id=pygame_gui.core.ObjectID(object_id="#eq_label")
         )
 
         self.queue_panel = pygame_gui.elements.UIScrollingContainer(
@@ -490,7 +490,6 @@ class MusicControlPanel(Panel):
                 si.change_object_id(pygame_gui.core.ObjectID(object_id="#playing_SongItem_panel"))
                 self.playing_SongItem = si
                 self.song_name_label.set_text(si.song_name)
-                self.file_name_label.set_text(os.path.basename(si.file_path))
                 self.artist_album_label.set_text(f"{si.artist} {si.album}")
                 break
     
@@ -540,7 +539,8 @@ class MusicControlPanel(Panel):
             self.file_progress.set_current_value(wiper_val)
         if state_name == "PLAYING" or state_name == "PAUSED":
             pos = self.file_progress.get_current_value()
-            self.time_progress_label.update_time_label(file_length_s, (file_length_s / 10000) * pos)
+            self.time_progress_label.update_time((file_length_s / 10000) * pos)
+            self.full_time_label.update_time(file_length_s)
 
         if state_name == "PLAYING" and "#play_button" in self.play_stop_btn.get_object_ids():
             self.play_stop_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
@@ -550,10 +550,9 @@ class MusicControlPanel(Panel):
                                                                        object_id="#play_button"))
         
         # podla stavu skryjem tlacitka co by sa nemali stlacat:
-        if not self.file_name_label.visible:
+        if not self.song_name_label.visible:
             self.next_btn.show()
             self.previous_btn.show()
-            self.file_name_label.show()
             self.song_name_label.show()
             self.artist_album_label.show()
 
@@ -561,17 +560,19 @@ class MusicControlPanel(Panel):
             self.play_stop_btn.hide()
             self.file_progress.hide()
             self.time_progress_label.hide()
+            self.full_time_label.hide()
         elif (state_name == "PLAYING" or state_name == "PAUSED") and not self.play_stop_btn.visible:
             self.play_stop_btn.show()
             self.file_progress.show()
             self.time_progress_label.show()
+            self.full_time_label.show()
         elif state_name == "INITIAL":
             self.play_stop_btn.hide()
             self.file_progress.hide()
             self.time_progress_label.hide()
+            self.full_time_label.hide()
             self.next_btn.hide()
             self.previous_btn.hide()
-            self.file_name_label.hide()
             self.song_name_label.hide()
             self.artist_album_label.hide()
             if self.playing_SongItem is not None:
@@ -743,6 +744,7 @@ class MusicControlPanel(Panel):
                 value = event.value
                 self.volume = value
                 self.last_volume = value
+                self.volume_slider.set_current_value(value)
                 app.change_volume(value)
 
             elif "#audio_file_progress_slider" in event.ui_element.object_ids:
@@ -778,13 +780,15 @@ class SongItem(pygame_gui.elements.UIPanel):
                  icon_path: str | None = None):
         super().__init__(relative_rect=rect, manager=manager, container=container, object_id=object_id)
         self.file_path = file_path
-        self.song_name = song_name if song_name != "None" else "--"
+        self.song_name = os.path.basename(file_path) if song_name == "None" else song_name
         self.artist = artist if artist != "None" else ""
         self.album = f"- {album}" if album != "None" else ""
-        self.build_ui(rect, manager, file_path, icon_path)
+
+        song_name_y = 32 if song_name == "None" else 19
+        self.build_ui(rect, manager, file_path, icon_path, song_name_y)
 
 
-    def build_ui(self, rect, manager, file_path, icon_path):
+    def build_ui(self, rect, manager, file_path, icon_path, song_name_y):
         """
         Builds all of the UI elements.
         """
@@ -800,7 +804,7 @@ class SongItem(pygame_gui.elements.UIPanel):
 
         if image_surface:
             self.icon = pygame_gui.elements.UIImage(
-                relative_rect=pg.Rect(5, 0, 48, 48),
+                relative_rect=pg.Rect(16, 0, 48, 48),
                 image_surface=image_surface,
                 manager=manager,
                 container=self,
@@ -821,7 +825,7 @@ class SongItem(pygame_gui.elements.UIPanel):
         )
 
         self.options_btn = pygame_gui.elements.UIButton(
-            relative_rect=pg.Rect(rect.width - 40, 0, 40, 40),
+            relative_rect=pg.Rect(rect.width - 45, 0, 40, 40),
             manager=manager,
             text="",
             container=self,
@@ -831,9 +835,9 @@ class SongItem(pygame_gui.elements.UIPanel):
                                                object_id="#options_button")
         )
 
-        text_x = 60
+        text_x = 80
         self.song_name_label = pygame_gui.elements.UILabel(
-            relative_rect=pg.Rect(text_x, 10, -1, 25),
+            relative_rect=pg.Rect(text_x, song_name_y, -1, 25),
             text=self.song_name,
             manager=manager,
             container=self,
@@ -841,17 +845,8 @@ class SongItem(pygame_gui.elements.UIPanel):
                                                object_id="#big_label")
         )
 
-        self.file_name_label = pygame_gui.elements.UILabel(
-            relative_rect=pg.Rect(text_x, 32, -1, 22),
-            text=os.path.basename(file_path),
-            manager=manager,
-            container=self,
-            object_id=pygame_gui.core.ObjectID(class_id="@SongItem_labels",
-                                               object_id="#normal_label")
-        )
-
         self.artist_label = pygame_gui.elements.UILabel(
-            relative_rect=pg.Rect(text_x, 56, -1, 22),
+            relative_rect=pg.Rect(text_x, 45, -1, 22),
             text=self.artist,
             manager=manager,
             container=self,
@@ -860,7 +855,7 @@ class SongItem(pygame_gui.elements.UIPanel):
         )
 
         self.album_label = pygame_gui.elements.UILabel(
-            relative_rect=pg.Rect(self.artist_label.relative_rect.right + 4, 56, -1, 22),
+            relative_rect=pg.Rect(self.artist_label.relative_rect.right + 4, 45, -1, 22),
             text=self.album,
             manager=manager,
             container=self,
@@ -909,7 +904,7 @@ class EqualizerSliderPanel(pygame_gui.elements.UIPanel):
         )
 
         self.label = pygame_gui.elements.UILabel(
-            relative_rect=pg.Rect(0, 0, 70, 25),
+            relative_rect=pg.Rect(0, 0, 72, 25),
             manager=manager,
             container=self,
             anchors={"centery": "centery"},
@@ -958,7 +953,8 @@ class Slider(pygame_gui.elements.UIPanel):
                          object_id=object_id,
                          anchors=anchors)
         self.build_ui(relative_rect, manager, value_range, start_value, click_increment)
-        self.current_value = self.wiper.get_current_value()
+        self.max_value = value_range[1]
+        self.set_current_value(start_value)
 
     def set_current_value(self, new_value: float | int, warn: bool=True) -> None:
         """
@@ -968,6 +964,8 @@ class Slider(pygame_gui.elements.UIPanel):
         :param warn: set to 'False' to suppress the default warning, instead the value will be clamped.
         """
         self.wiper.set_current_value(new_value, warn)
+        width = (self.get_relative_rect().width / self.max_value) * self.get_current_value()
+        self.line_progress.set_dimensions((width, 4))
 
     def get_current_value(self) -> float | int:
         """
@@ -979,6 +977,24 @@ class Slider(pygame_gui.elements.UIPanel):
         """
         Builds all of the UI elements.
         """
+        
+        self.line = pygame_gui.elements.UIPanel(
+            relative_rect=pg.Rect(2, rect.height // 2 - 1, rect.width - 2, 4),
+            manager=manager,
+            container=self,
+            starting_height=1,
+            object_id="#slider_line"
+        )
+
+        self.line_progress = pygame_gui.elements.UIPanel(
+            relative_rect=pg.Rect(2, rect.height // 2 - 1, 0, 4),
+            manager=manager,
+            container=self,
+            starting_height=2,
+            anchors={"left": "left"},
+            object_id="#slider_line_progress"
+        )
+
         self.wiper = pygame_gui.elements.UIHorizontalSlider(
             relative_rect=pg.Rect(0, 0, rect.width, rect.height),
             start_value=start_value,
@@ -990,53 +1006,26 @@ class Slider(pygame_gui.elements.UIPanel):
             object_id="#slider_wiper",
         )
 
-        self.line = pygame_gui.elements.UIPanel(
-            relative_rect=pg.Rect(2, rect.height // 2 - 1, rect.width - 2, 4),
-            manager=manager,
-            container=self,
-            object_id="#slider_line"
-        )
 
-
-class TimeProgressUILabel(pygame_gui.elements.UIPanel):
-    def __init__(self, relative_rect, manager, container, anchors={}, starting_height=1):
+class TimeUILabel(pygame_gui.elements.UILabel):
+    def __init__(self, relative_rect, manager, container, anchors={}, object_id=pygame_gui.core.ObjectID()):
         super().__init__(relative_rect=relative_rect,
                          manager=manager,
                          container=container,
-                         starting_height=starting_height,
                          anchors=anchors,
-                         object_id=pygame_gui.core.ObjectID(class_id="@main_panels"))
-        self.build_ui(relative_rect, manager)
+                         text="",
+                         object_id=object_id)
 
-    def build_ui(self, relative_rect, manager):
-        """
-        Builds all of the UI elements.
-        """
-        
-        self.time_label = pygame_gui.elements.UILabel(
-            relative_rect=pg.Rect(0, 0, relative_rect.width, relative_rect.height),
-            text="",
-            manager=manager,
-            container=self,
-            object_id="#eq_label"
-        )
-
-    def update_time_label(self, full_time_s: float, playing_time_s: float):
+    def update_time(self, time_s: float):
         """
         Updates the displayed time.
 
-        :param full_time_s: Full time, in seconds.
-        :param playing_time_s: Time the songs has been playing for, in seconds.
-        :type full_time_s: float
-        :type playing_time_s: float
+        :param time_s: Time to be displayed, in seconds.
+        :type time_s: float
         """
-        self.full_time_s = full_time_s
-        self.full_minutes = int(full_time_s / 60)
-        self.full_seconds = round(full_time_s % 60)
+        self.time_s = time_s
+        self.minutes = int(time_s / 60)
+        self.seconds = round(time_s) % 60
 
-        self.playing_time_s = playing_time_s
-        self.playing_minutes = int(self.playing_time_s / 60)
-        self.playing_seconds = round(self.playing_time_s % 60)
-
-        text = f"{self.playing_minutes}:{self.playing_seconds:02d} / {self.full_minutes}:{self.full_seconds:02d}"
-        self.time_label.set_text(text)
+        text = f"{self.minutes}:{self.seconds:02d}"
+        self.set_text(text)

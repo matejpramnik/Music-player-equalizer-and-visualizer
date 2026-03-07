@@ -297,7 +297,7 @@ class App:
         icon = pg.image.load("icons/darkChartBig.png")
         pg.display.set_icon(icon)
         self.clock = pg.time.Clock()
-        self.font = pg.font.Font("font/TCM_____.TTF", 12)
+        self.font = pg.font.Font("font/Inter-VariableFont_opsz,wght.ttf", 12)
 
         self.curr_audio_file = self.queue[0]
         self.player = AudioPlayer([], volume=self.volume)
@@ -330,11 +330,11 @@ class App:
         theme = "theme.json" if self.theme == 0 else "light_theme.json"
         self.manager = pygame_gui.UIManager((self.screen_width, self.screen_height), enable_live_theme_updates=True)
         self.manager.add_font_paths(
-            font_name="tw_cen_mt",
-            regular_path="font/TCM_____.TTF"
+            font_name="Inter",
+            regular_path="font/Inter-VariableFont_opsz,wght.ttf"
         )
         self.manager.get_theme().get_font_dictionary().preload_font(
-            font_name="tw_cen_mt",
+            font_name="Inter",
             font_size=18,
             bold=False,
             italic=False,

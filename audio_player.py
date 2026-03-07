@@ -101,11 +101,12 @@ class AudioPlayer():
         """
         Pauses playback. Uses sounddevice's abort method for an instant stop.
         """
-        with self.lock:
-            self.playing = False
         self.stream.abort()
         time = self.get_position_s()
         self.seek(time)
+        with self.lock:
+            self.playing = False
+            self.finished = False
 
     def stop(self) -> None:
         """
