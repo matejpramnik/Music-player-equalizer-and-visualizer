@@ -418,7 +418,7 @@ class App:
         f_max = freq_interval[1]
         fps = rate / chunk
         factor = self.vis_panel.rect.width / 261
-        level_offset = self.vis_panel.rect.width / 150
+        level_offset = self.vis_panel.rect.width / 90
 
         q = self.eq_q_factor
         freqs = self.freqs.items()
@@ -611,7 +611,7 @@ class App:
 
                 # davam offset -30, aby bolo syncnute
                 i = int(curr * fps - 30)
-                if i > len(processed_vis_data) - 1:
+                if i > len(processed_vis_data) - 1 or self.player.get_finished():
                     # cely audio subor sa uz prehral/vizualizoval
                     self.continue_in_queue()
                     i = len(processed_vis_data) - 1

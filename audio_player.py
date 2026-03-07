@@ -11,6 +11,7 @@ class AudioPlayer():
         self.board = board
         self.gain = volume
         
+        self.finished = False
         self.position = 0
         self.last_callback_time = 0
         self.position_at_last_cb = 0
@@ -31,6 +32,7 @@ class AudioPlayer():
         #     print(status)
 
         with self.lock:
+            self.finished = False
             if not self.playing:
                 outdata[:] = 0
                 return
@@ -58,6 +60,7 @@ class AudioPlayer():
         Sets playing to False in case the restart_stream() method is called after the stream has ended.
         """
         with self.lock:
+            self.finished = True
             self.playing = False
             self.position = 0
 
@@ -86,6 +89,7 @@ class AudioPlayer():
         Starts playback.
         """
         with self.lock:
+            self.finished = False
             self.playing = True
             self.last_callback_time = 0
         if not self.stream.active:
@@ -224,3 +228,10 @@ class AudioPlayer():
         self.seek(pos / self.rate)
         if play or playing:
             self.play()
+
+    def get_finished(self) -> bool:
+        """
+        Returns True if the playback is finished.
+        """
+        with self.lock:
+            return self.finished

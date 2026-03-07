@@ -709,7 +709,7 @@ class MusicControlPanel(Panel):
                 app.switch_theme()
 
             elif event.ui_element == self.small_window_btn:
-                app.change_window_size(1150, 768)
+                app.change_window_size(1300, 768)
             
             elif event.ui_element == self.medium_window_btn:
                 app.change_window_size(1600, 960)
