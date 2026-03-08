@@ -738,11 +738,15 @@ class App:
 
         self.player.stop()
 
-        # uzivatel klikol:
-        if clicked_back:
-            next_index = self.currently_played_queue_index - 1
-        elif clicked_next:
-            next_index = self.currently_played_queue_index + 1
+        # uzivatel klikol: (mess)
+        if clicked_back or clicked_next:
+            if clicked_back:
+                next_index = self.currently_played_queue_index - 1
+            elif clicked_next:
+                next_index = self.currently_played_queue_index + 1
+
+            if next_index >= len(self.queue) - 1:
+                next_index = next_index % len(self.queue)
 
         # uzivatel neklikol (skoncil sa subor):
         else:
