@@ -290,7 +290,7 @@ class MusicControlPanel(Panel):
 
         self.open_file_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(70, self.add_dir_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
-            text="Add file to queue",
+            text="Add files to queue",
             manager=self.manager, 
             container=self.burger_menu_panel,
             object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
