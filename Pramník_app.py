@@ -255,12 +255,12 @@ class State(Enum):
 
 class App:
     def __init__(self):
-        # tento import musi byt az tu kvoli ImportError (circular import)
+        # circular import prevention
         from classes import MusicControlPanel, VisPanel
 
         self.output_device = AudioUtilities.GetSpeakers()
 
-        # zapamatany config
+        # remembered config state
         try:
             with open("config.json", "r") as f:
                 config_data = json.load(f)
@@ -270,7 +270,7 @@ class App:
         self.screen_width = config_data["width"] if config_data != None else 1360
         self.screen_height = config_data["height"] if config_data != None else 800
 
-        # nie vzdy je cesta ku suborom pristupna
+        # the route may not exist (SAN/NAS, network drive)
         self.queue = config_data["queue"] if config_data != None else ["04 - Beat It.flac"]
         self.original_queue = config_data["original_queue"] if config_data != None else self.queue.copy()
 
@@ -290,7 +290,7 @@ class App:
         self.currently_played_queue_index = 0
         self.vis_start = 650
 
-        # pygame inicializacia
+        # pygame init
         pg.init()
         self.display = pg.display.init()
         pg.display.set_caption("Music player")
@@ -319,14 +319,13 @@ class App:
         ])
         self.player.set_board(self.equalizer_board)
 
-        # pygame window/display veci
+        # pygame window/display things; splits the display into 2 parts
         self.display = pg.display.set_mode((self.screen_width, self.screen_height))
         controls_rect = pg.Rect(0, 0, self.vis_start, self.screen_height)
         drawing_rect = pg.Rect(self.vis_start, 0, self.screen_width - self.vis_start, self.screen_height)
 
-        # pygame_gui veci:
-        # 1 manager, obrazovka rozdelena na 2 panely, 1 na controls, 1 na vizualizaciu
-        #  + tema a font
+        # pygame_gui:
+        # 1 manager, panels for display split; theme + font
         theme = "theme.json" if self.theme == 0 else "light_theme.json"
         self.manager = pygame_gui.UIManager((self.screen_width, self.screen_height), enable_live_theme_updates=True)
         self.manager.add_font_paths(
@@ -355,14 +354,12 @@ class App:
         )
         self.vis_panel = VisPanel(drawing_rect, self.manager)
 
-        # loading animacia
+        # loading animation
         icon_path = "icons/loadingDark" if self.theme == 1 else "icons/loadingLight"
         self.loading_frames = load_frames_folder(icon_path)
 
-        # typ vizualizacie
+        # visualization types
         self.vis_num = 3
-        self.log_scale = False
-        self.log_volume = False
         self.fps = 44100 / 512
 
         self.running = True
@@ -376,7 +373,7 @@ class App:
         Private method, should not be called explicitly.\n
         Creates one frame of "basic"-type visualization, draws it onto a vis_panel surface.
         """
-        # Vykreslenie vizualizacie pre 1 chunk (1 riadok base vizualizacie)
+        # 1 visualization row (basic visualization, just 1 frequency domain)
 
         counter = 0
         f_min = freq_interval[0]
@@ -394,7 +391,7 @@ class App:
                 counter += 1
                 continue
 
-            # zohladnenie ekvalizera:
+            # eq taken into account:
             vis_gain = calculate_vis_gain(freqs, q, f)
             vis_gain_multiplier = 10 ** (vis_gain / 20)
 
@@ -442,7 +439,7 @@ class App:
                 if f < f_min or f > f_max:
                     continue
 
-                # zohladnenie ekvalizera:
+                # eq taken into account:
                 vis_gain = calculate_vis_gain(freqs, q, f)
                 vis_gain_multiplier = 10 ** (vis_gain / 20)
 
@@ -451,7 +448,7 @@ class App:
                 y = current_iter_y if y >= current_iter_y else 0 if y <= 0 else y
                 x, y = int(round(x)), int(round(y))
 
-                # zmena sirky vyrazne spomaluje vykreslovanie
+                # DO NOT change the width; massively impacts performace
                 pg.draw.line(self.vis_panel.surface, color, (x, current_iter_y), (x, y), width = 1)
 
 
@@ -460,7 +457,6 @@ class App:
         Private method, should not be called explicitly.\n
         Creates one frame of "circle" type visualization, draws it onto a vis_panel surface.
         """
-        # Vykreslenie vizualizacie pre 1 chunk
 
         counter = 0
         f_min = freq_interval[0]
@@ -486,7 +482,7 @@ class App:
                 counter += 1
                 continue
 
-            # zohladnenie ekvalizera:
+            # eq taken into account:
             vis_gain = calculate_vis_gain(freqs, q, f)
             vis_gain_multiplier = 10 ** (vis_gain / 20)
 
@@ -517,33 +513,33 @@ class App:
         self.worker_process = None
         self.initial_data_loaded = True
 
-        # aby boli queues synchronizovane medzi App a MusicControlPanel
-        #  // nevolat // pred tym ako sa v control_panel vytvori queue GUI
+        # App and MusicControlPanel queues sync
+        #  DO NOT call before control_panel queue GUI is first created
         self.control_panel.queue = self.queue.copy()
 
-        # loading animacia pomocne premenne
+        # loading animation variables
         current_frame = 0
         accum_time = 0
         frame_delay = 25
 
         while self.running:
 
-            # skontrolovat device change
+            # check device change
             device = AudioUtilities.GetSpeakers()
             if device.id != self.output_device.id:
                 self.output_device = device
                 playing = self.player.get_busy()
                 self.player.restart_player(playing)
             
-            # synchronizacia:
+            # sync
             self.control_panel.currently_played_queue_index = self.currently_played_queue_index
-            # vsetky eventy pygame a panelov + update UI
+            # event handling + UI update
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     self.running = False
                     self.player.terminate_player()
                     pg.quit()
-                    # zapamatanie konfiguracie uzivatela
+                    # remembers the config
                     save_config = {
                         "width": self.screen_width,
                         "height": self.screen_height,
@@ -563,9 +559,8 @@ class App:
                     quit()
                 self.manager.process_events(event)
                 self.control_panel.handle_event(event, self)
-                #self.vis_panel.handle_event(event, self)
 
-            # "vymazanie" predoslej iteracie vizualizacie (refresh) + clock tick:
+            # erases the previous iteration of vis + clock tick
             self.vis_panel.surface.fill((232, 241, 242) if self.theme == 1 else (10,12,16))
             self.manager.update(1 / self.fps)
             self.manager.draw_ui(self.display)
@@ -573,6 +568,7 @@ class App:
             self.control_panel.update_ui(self.state, self.player.get_position_s(), self.player.get_song_length_s())
 
             if self.state == State.DATA_LOADING and not self.thread_retval.empty():
+                # data is loaded, worker process has finished
                 self.vis_data = self.thread_retval.get()
                 self.processed_vis_data_max_val = max([np.max(chunk) for chunk in self.vis_data[3]])
                 self.player.set_audio(self.vis_data[4])
@@ -589,6 +585,7 @@ class App:
 
 
             elif self.state == State.DATA_LOADING:
+                # data is being loaded, draw the loading animation
                 
                 accum_time += dt
                 if accum_time >= frame_delay:
@@ -603,16 +600,17 @@ class App:
 
 
             elif self.state == State.PLAYING or self.state == State.PAUSED:
+                # is either playing, or is paused; draw the visualization
                 rate, chunk, freq_interval, processed_vis_data, _ = self.vis_data
 
                 fps = rate / chunk
                 if self.state == State.PAUSED: curr = self.player.get_position_s(True)
                 else: curr = self.player.get_position_s()
 
-                # davam offset -30, aby bolo syncnute
+                # offset -30; sync reasons
                 i = int(curr * fps - 30)
                 if i > len(processed_vis_data) - 1 or self.player.get_finished():
-                    # cely audio subor sa uz prehral/vizualizoval
+                    # the entire file has finished playback
                     self.continue_in_queue()
                     i = len(processed_vis_data) - 1
                     continue
@@ -620,7 +618,7 @@ class App:
                     i = 0
 
                 ############################################################################################
-                #vizualizacie:
+                #visualizations:
 
                 working_data = processed_vis_data[i]
                 if self.processed_vis_data_max_val > 0.0:
@@ -633,11 +631,11 @@ class App:
 
                 # 3D-ish
                 elif self.vis_type == 2:
-                    # Pocet vizualizovanych "riadkov"; nad 15 to zacina sekat s eq, ale je to in sync aj tak
+                    # the number of visualized rows; starts to lag when above 15
                     vis_num = 12
                     self.__visualize_3d(rate, chunk, freq_interval, processed_vis_data, i, vis_num, scale_value)
 
-                # kruhova
+                # circle
                 elif self.vis_type == 3:
                     self.__visualize_circle(rate, chunk, freq_interval, working_data, i)
 
@@ -645,10 +643,9 @@ class App:
 
 
 
-            # nakreslenie, zaobrazenie (musi to byt v tomto poradi):
+            # blit and flip (order of operations must be preserved)
             self.display.blit(self.vis_panel.surface, self.vis_panel.rect.topleft)
             self.display.blit(self.control_panel.surface, self.control_panel.rect.topleft)
-            
             pg.display.flip()
             
     
@@ -658,12 +655,12 @@ class App:
         Private method, should not be called explicitly.\n
         Sets a new audio file for processing and playback
         """
-        # tuto metodu vola iba change_song
+        # this method is called only by change_song()
         self.curr_audio_file = path
         if not bypass_loading:
             self.thread_retval = Queue()
             if self.worker_process is not None and self.worker_process.is_alive():
-                # get_vis_data iba cita zo suboru + pouziva ffmpeg, nehrozi data loss/corruption
+                # get_vis_data only reads the files (+ffmpeg); data corruption won't happen; can terminate
                 self.worker_process.terminate()
                 self.worker_process.join()
             self.worker_process = Process(target=get_vis_data,
@@ -685,7 +682,6 @@ class App:
         :type bypass_loading: boolean
         :type clicked: boolean
         """
-        # tuto metodu volaju aj classes
         self.player.stop()
         self.currently_played_queue_index = self.queue.index(path)
         if not bypass_loading:
@@ -705,7 +701,7 @@ class App:
         """
         for filter in self.equalizer_board:
             if type(filter) is PeakFilter and filter.cutoff_frequency_hz == frequency:
-                # value moze byt v intervale <-120, 120> - vyssia presnost
+                # value can be in <-120, 120> - higher resolution
                 filter.gain_db = value / 10
                 self.freqs[frequency] = value
                 break
@@ -738,7 +734,7 @@ class App:
 
         self.player.stop()
 
-        # uzivatel klikol: (mess)
+        # the user has clicked (messy)
         if clicked_back or clicked_next:
             if clicked_back:
                 next_index = self.currently_played_queue_index - 1
@@ -748,9 +744,9 @@ class App:
             if next_index >= len(self.queue) - 1:
                 next_index = next_index % len(self.queue)
 
-        # uzivatel neklikol (skoncil sa subor):
+        # the user has not clicked (file has ended)
         else:
-            if self.repeat_one: # funguje
+            if self.repeat_one:
                 next_index = self.currently_played_queue_index
                 self.change_song(self.curr_audio_file, bypass_loading=True)
                 return
@@ -768,7 +764,7 @@ class App:
         self.curr_audio_file = self.queue[next_index]
         self.currently_played_queue_index = self.queue.index(self.curr_audio_file)
 
-        #synchronizacia logiky a GUI:
+        # logic and GUI sync
         self.control_panel.currently_played_queue_index = self.currently_played_queue_index
         self.control_panel.mark_played()
         self.change_song(self.curr_audio_file)
@@ -842,7 +838,6 @@ class App:
                 self.shuffle = False
                 self.queue = self.original_queue.copy()
             self.control_panel.queue = self.queue.copy()
-            #self.control_panel.set_queue(self.queue.copy())
             if not self.initial_data_loaded:
                 self.currently_played_queue_index = self.queue.index(self.curr_audio_file)
                 self.control_panel.currently_played_queue_index = self.currently_played_queue_index
@@ -884,7 +879,7 @@ class App:
         self.display = pg.display.set_mode((width, height))
 
         self.manager.set_window_resolution((self.screen_width, self.screen_height))
-        self.control_panel.redraw(self.vis_start, self.screen_height)
+        self.control_panel.redraw(self.vis_start, self.screen_height, self.original_queue.copy())
         self.vis_panel.redraw(self.screen_width - self.vis_start, self.screen_height)
         self.control_panel.mark_played()
 
@@ -892,11 +887,11 @@ class App:
 
 if __name__ == "__main__":
     freeze_support()
-    # pygame import tu, kvoli multiprocessingu a Windows spawn() metode
+    # pygame import here, because of multiprocessing and the Windows spawn() method
     import pygame as pg
     import pygame_gui
 
-    # aby sa okno automaticky neskalovalo
+    # the window should not scale automatically (pygame thing)
     ctypes.windll.shcore.SetProcessDpiAwareness(2)
     App()
     

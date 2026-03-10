@@ -546,12 +546,37 @@
         "colours": {
             "dark_bg": "#00000000",
             "normal_text": "#FCFCFCFF"
+        },
+        "misc": {
+            "text_horiz_alignment": "right"
         }
     },
 
 
 
 
+
+    "@text_buttons": {
+        "colours": {
+            "normal_border": "#575757FF",
+            "active_border": "#575757FF",
+            "hovered_border": "#A8A8A8FF",
+            "normal_text": "#FCFCFCFF",
+            "selected_text": "#FCFCFCFF",
+            "hovered_text": "#FCFCFCFF"
+        },
+        "misc": {
+            "shape": "rounded_rectangle",
+            "shadow_width": "0",
+            "shape_corner_radius": "8",
+            "text_vert_alignment": "center",
+            "text_horiz_alignment": "center"
+        },
+        "font": {
+            "name": "Inter",
+            "size": "16"
+        }
+    },
 
     "@menu_choice_buttons": {
         "colours": {

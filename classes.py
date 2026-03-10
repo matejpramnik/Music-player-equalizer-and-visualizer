@@ -63,7 +63,7 @@ class Panel():
         if path == None: return []
         return path
     
-    # kvoli resize:
+    # resize "handler"
     def redraw(self, width: int, height: int) -> None:
         """
         Updates the Rect, Panel and Surface of a panel to specified dimensions.\n
@@ -109,13 +109,13 @@ class MusicControlPanel(Panel):
         self.last_volume = volume
         self.playing_SongItem = None
         
-        self.build_ui()
+        self.build_ui(orig_queue)
 
-    def redraw(self, width, height):
+    def redraw(self, width, height, queue):
         super().redraw(width, height)
-        self.build_ui()
+        self.build_ui(queue)
 
-    def build_ui(self) -> None:
+    def build_ui(self, queue) -> None:
         
         self.play_stop_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(0, self.surface.get_height() - 80, 60, 60),
@@ -189,7 +189,7 @@ class MusicControlPanel(Panel):
         )
 
         self.song_name_label = pygame_gui.elements.UILabel(
-            relative_rect=pg.Rect(0, self.play_stop_btn.rect.top - 150, -1, -1),
+            relative_rect=pg.Rect(0, self.play_stop_btn.rect.top - 125, -1, -1),
             text="",
             manager=self.manager,
             container=self.panel,
@@ -225,7 +225,7 @@ class MusicControlPanel(Panel):
             container=self.panel,
             manager=self.manager,
             anchors={"centerx": "centerx"},
-            object_id=pygame_gui.core.ObjectID(object_id="#eq_label")
+            object_id=pygame_gui.core.ObjectID(object_id="#normal_label")
         )
 
         self.full_time_label = TimeUILabel(
@@ -233,7 +233,7 @@ class MusicControlPanel(Panel):
             container=self.panel,
             manager=self.manager,
             anchors={"centerx": "centerx"},
-            object_id=pygame_gui.core.ObjectID(object_id="#eq_label")
+            object_id=pygame_gui.core.ObjectID(object_id="#normal_label")
         )
 
         self.queue_panel = pygame_gui.elements.UIScrollingContainer(
@@ -245,8 +245,8 @@ class MusicControlPanel(Panel):
             container=self.panel,
             starting_height=1
         )
-        if len(self.queue) > 0:
-            self.set_queue(self.queue)
+        if len(queue) > 0:
+            self.set_queue(queue)
 
 #################################################################################
 # Burger menu
@@ -378,8 +378,10 @@ class MusicControlPanel(Panel):
         )
 #################################################################################
 
+#################################################################################
+# equalizer panel
         self.eq_panel = pygame_gui.elements.UIPanel(
-            relative_rect=pg.Rect(20, 0, self.surface.get_width() - 20, self.surface.get_height() - 250),
+            relative_rect=pg.Rect(15, 0, self.surface.get_width() - 20, self.surface.get_height() - 230),
             manager=self.manager,
             container=self.panel,
             starting_height=5,
@@ -398,16 +400,64 @@ class MusicControlPanel(Panel):
                                                object_id="#cross_button")
         )
 
-        y = 12
+        self.flat_preset_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(0, 80, 75, 40),
+            text="Flat",
+            manager=self.manager,
+            container=self.eq_panel,
+            starting_height=2,
+            object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
+        )
+
+        self.v_shape_preset_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(0, self.flat_preset_btn.rect.bottom + 20, 75, 40),
+            text="V-shape",
+            manager=self.manager,
+            container=self.eq_panel,
+            starting_height=2,
+            object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
+        )
+
+        self.clarity_preset_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(0, self.v_shape_preset_btn.rect.bottom + 20, 75, 40),
+            text="Clarity",
+            manager=self.manager,
+            container=self.eq_panel,
+            starting_height=2,
+            object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
+        )
+
+        self.bass_preset_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(0, self.clarity_preset_btn.rect.bottom + 20, 75, 40),
+            text="Bass",
+            manager=self.manager,
+            container=self.eq_panel,
+            starting_height=2,
+            object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
+        )
+
+        self.vocal_preset_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(0, self.bass_preset_btn.rect.bottom + 20, 75, 40),
+            text="Vocals",
+            manager=self.manager,
+            container=self.eq_panel,
+            starting_height=2,
+            object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
+        )
+
+        self.eq_sliders = []
+        y = 5
         for freq, gain in self.freqs.items():
-            EqualizerSliderPanel(rect=pg.Rect(-30, y, 420, 50),
-                                 manager=self.manager,
-                                 container=self.eq_panel,
-                                 frequency=freq,
-                                 start_value=gain,
-                                 anchors={"centerx": "centerx"},
-                                 object_id="#eq_slider_panel")
+            slider_panel = EqualizerSliderPanel(rect=pg.Rect(-30, y, 420, 50),
+                                         manager=self.manager,
+                                         container=self.eq_panel,
+                                         frequency=freq,
+                                         start_value=gain,
+                                         anchors={"centerx": "centerx"},
+                                         object_id="#eq_slider_panel")
+            self.eq_sliders.append(slider_panel)
             y += 50
+#################################################################################
 
     def set_queue(self, new_queue: list) -> bool:
         """
@@ -509,7 +559,7 @@ class MusicControlPanel(Panel):
         :type file_pos_s: float
         :type file_length_s: float
         """
-        # zobrazenie/skrytie tlacidiel na next/previous
+        # next/previous button hide/show
         index = self.currently_played_queue_index
         rep_queue = self.repeat_queue
         q_len = len(self.queue)
@@ -532,7 +582,7 @@ class MusicControlPanel(Panel):
                                                                       object_id="#volume_button"))
         
         # file progress
-        # faktor 10000 kvoli zaokruhlovacej chybe, pozri self.file_progress
+        # factor 10000 because of rounding error, see self.file_progress
         if state_name == "PLAYING":
             wiper_val = (file_pos_s / file_length_s) * 10000
             if wiper_val >= 10000: wiper_val = 10000
@@ -549,7 +599,7 @@ class MusicControlPanel(Panel):
             self.play_stop_btn.change_object_id(pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                                        object_id="#play_button"))
         
-        # podla stavu skryjem tlacitka co by sa nemali stlacat:
+        # hiding buttons that would do nothing; based on the app state
         if not self.song_name_label.visible:
             self.next_btn.show()
             self.previous_btn.show()
@@ -669,7 +719,7 @@ class MusicControlPanel(Panel):
                     self.window_size_menu_panel.show()
 
             elif event.ui_element == self.open_dir_btn:
-                # zasekne sa ui pri vacsich priecinkoch; pygame_gui nie je thread safe
+                # blocks ui, laggy when the directory is large; pygame_gui is not thread-safe
                 path = self.open_directory()
                 files = self.scan_directory(path)
                 status = self.set_queue(files)
@@ -679,6 +729,7 @@ class MusicControlPanel(Panel):
                 self.eq_panel.hide()
 
             elif event.ui_element == self.open_file_btn:
+                # blocks ui, laggy when many files are chosen; pygame_gui is not thread-safe
                 path = self.open_file()
                 status = self.add_to_queue(path)
                 if status:
@@ -686,7 +737,7 @@ class MusicControlPanel(Panel):
                 self.burger_menu_panel.hide()
 
             elif event.ui_element == self.add_dir_btn:
-                # zasekne sa ui pri vacsich priecinkoch, lebo pygame_gui nie je thread safe
+                # blocks ui, laggy when the directory is large; pygame_gui is not thread-safe
                 path = self.open_directory()
                 files = self.scan_directory(path)
                 status = self.add_to_queue(files)
@@ -710,13 +761,51 @@ class MusicControlPanel(Panel):
                 app.switch_theme()
 
             elif event.ui_element == self.small_window_btn:
-                app.change_window_size(1300, 768)
+                app.change_window_size(1300, 790)
             
             elif event.ui_element == self.medium_window_btn:
                 app.change_window_size(1600, 960)
 
             elif event.ui_element == self.large_window_btn:
                 app.change_window_size(1920, 1020)
+
+            elif event.ui_element == self.flat_preset_btn:
+                # flat preset; every slider to 0 dB
+                for eq_slider_panel in self.eq_sliders:
+                    eq_slider_panel.slider.set_current_value(0)
+                    app.change_eq(eq_slider_panel.frequency, 0)
+
+            elif event.ui_element == self.v_shape_preset_btn:
+                # standard V-shape eq preset; boosts bass and treble, ideal for rock and pop music
+                gains = [80, 60, 40, 15, 5, 5, 15, 40, 60, 80]
+                for i in range(10):
+                    self.eq_sliders[i].slider.set_current_value(gains[i])
+                    app.change_eq(self.eq_sliders[i].frequency, gains[i])
+                    self.freqs[self.eq_sliders[i].frequency] = gains[i]
+
+            elif event.ui_element == self.clarity_preset_btn:
+                # creates an audible difference between highs and lows at the expense of vocals
+                gains = [40, 30, 10, -20, -20, 0, 15, 20, 10, 10]
+                for i in range(10):
+                    self.eq_sliders[i].slider.set_current_value(gains[i])
+                    app.change_eq(self.eq_sliders[i].frequency, gains[i])
+                    self.freqs[self.eq_sliders[i].frequency] = gains[i]
+
+            elif event.ui_element == self.bass_preset_btn:
+                # boosts low frequencies; simulates a low-pass filter; balances it with a slight mid-high frequency boost
+                gains = [80, 65, 30, 20, 0, -5, 5, 15, 10, 0]
+                for i in range(10):
+                    self.eq_sliders[i].slider.set_current_value(gains[i])
+                    app.change_eq(self.eq_sliders[i].frequency, gains[i])
+                    self.freqs[self.eq_sliders[i].frequency] = gains[i]
+
+            elif event.ui_element == self.vocal_preset_btn:
+                # boosts frequencies where vocals typically exist
+                gains = [0, 10, 20, 60, 70, 50, 20, 5, 0, 0]
+                for i in range(10):
+                    self.eq_sliders[i].slider.set_current_value(gains[i])
+                    app.change_eq(self.eq_sliders[i].frequency, gains[i])
+                    self.freqs[self.eq_sliders[i].frequency] = gains[i]
 
             elif "#reset_single_button" in event.ui_element.object_ids:
                 event.ui_element.parent_element.slider.set_current_value(0)
@@ -737,7 +826,6 @@ class MusicControlPanel(Panel):
                 freq = event.ui_element.parent_element.frequency
                 value = event.value
                 app.change_eq(freq, value)
-                # toto neviem ci tu este treba:
                 self.freqs[freq] = value
 
             elif "#volume_slider" in event.ui_element.object_ids:
@@ -792,7 +880,7 @@ class SongItem(pygame_gui.elements.UIPanel):
         """
         Builds all of the UI elements.
         """
-        # obrazok (basic ikona)
+        # picture (basic icon)
         if icon_path:
             try:
                 image_surface = pg.image.load(icon_path).convert_alpha()
@@ -813,7 +901,7 @@ class SongItem(pygame_gui.elements.UIPanel):
         else:
             self.icon = None
 
-        # tento button bude transparentny, takze vyrobim kliknutelny panel
+        # transparent button the size of the entire panel; effectively a clickable panel
         self.click_area = TransparentUIButton(
             relative_rect=pg.Rect(-1, -1, rect.width + 2, rect.height + 2),
             text="",
@@ -903,13 +991,14 @@ class EqualizerSliderPanel(pygame_gui.elements.UIPanel):
             click_increment=5
         )
 
+        freq = str(self.frequency) if self.frequency < 1000 else str(round(self.frequency / 1000, 1)) + "k"
         self.label = pygame_gui.elements.UILabel(
             relative_rect=pg.Rect(0, 0, 72, 25),
             manager=manager,
             container=self,
             anchors={"centery": "centery"},
             object_id=pygame_gui.core.ObjectID(object_id="#eq_label"),
-            text=str(self.frequency) + "Hz"
+            text=freq + " Hz"
         )
 
         self.reset_btn = pygame_gui.elements.UIButton(

@@ -555,12 +555,36 @@
         "colours": {
             "dark_bg": "#00000000",
             "normal_text": "#13293DFF"
+        },
+        "misc": {
+            "text_horiz_alignment": "right"
         }
     },
 
 
 
 
+    "@text_buttons": {
+        "colours": {
+            "normal_border": "#D1D9DEFF",
+            "active_border": "#D1D9DEFF",
+            "hovered_border": "#6D6D6DAC",
+            "normal_text": "#1E2430FF",
+            "selected_text": "#1E2430FF",
+            "hovered_text": "#1E2430FF"
+        },
+        "misc": {
+            "shape": "rounded_rectangle",
+            "shadow_width": "0",
+            "shape_corner_radius": "8",
+            "text_vert_alignment": "center",
+            "text_horiz_alignment": "center"
+        },
+        "font": {
+            "name": "Inter",
+            "size": "16"
+        }
+    },
 
     "@menu_choice_buttons": {
         "colours": {

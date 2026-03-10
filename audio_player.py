@@ -18,7 +18,7 @@ class AudioPlayer():
 
         self.playing = False
         self.lock = threading.Lock()
-        # chunk/block-size ked je <16384 ->eq crackling; ked je >16384 ->eq ma dlhu odozvu
+        # chunk/block-size <16384 ->eq crackling; >16384 ->eq long latency
         self._stream(rate, chunk_size)
 
     def _callback(self, outdata, frames, time, status):
@@ -64,13 +64,14 @@ class AudioPlayer():
             self.playing = False
             self.position = 0
 
-    def _stream(self, rate: int, blocksize: int) -> None:
+    def _stream(self, rate: int, blocksize: int, device=None) -> None:
         """
         Protected method.\n
         Creates a sounddevice output stream.
 
         :param rate: Sampling rate of the audio.
         :param blocksize: The size of a block that is processed with each callback.
+        :param device: Output device, optional
         :type rate: integer
         :type blocksize: integer
         """
@@ -80,7 +81,7 @@ class AudioPlayer():
                 blocksize=blocksize,
                 channels=2,
                 latency="low",
-                device=None, # pouzije default device (prave zvoleny)
+                device=device, # None -> uses the default device (currently selected output device in Windows)
                 callback=self._callback,
                 finished_callback=self._on_finished)
         
@@ -221,13 +222,13 @@ class AudioPlayer():
             pos = self.position
             self.playing = False
         self.stream.abort()
-        self.stream.close()
 
         self.terminate_player()
+        sd.query_devices(sd.default.device, "output")
         self._stream(self.rate, self.chunk_size)
 
-        self.seek(pos / self.rate)
         if play or playing:
+            self.seek(pos / self.rate)
             self.play()
 
     def get_finished(self) -> bool:
