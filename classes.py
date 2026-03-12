@@ -35,12 +35,14 @@ class Panel():
     
     def scan_directory(self, path: str) -> list:
         """
-        Scans a directory and returns a list of all files in it.
+        Scans a directory and returns a list of all files in it. Will return the last image found in a directory.
 
         :param path: Path to the directory.
         :type path: string 
         """
         retarr = []
+        img_extensions = [".jpg", ".jpeg", ".png"]
+        ret_img_path = None
         if path == None: return retarr
         with os.scandir(path) as ents:
             for e in ents:
@@ -50,7 +52,9 @@ class Panel():
                     _, ext = os.path.splitext(e)
                     if ext in self.supported_extensions:
                         retarr.append(e.path)
-        return retarr
+                    if ext in img_extensions:
+                        ret_img_path = e.path
+        return retarr, ret_img_path
     
     def open_file(self) -> str:
         """
@@ -459,13 +463,15 @@ class MusicControlPanel(Panel):
             y += 50
 #################################################################################
 
-    def set_queue(self, new_queue: list) -> bool:
+    def set_queue(self, new_queue: list, img_path: str | None=None) -> bool:
         """
         Creates a new UIScrollingContainer and SongItem elements in it.\n
         Returns True if at least one element was added, else False.
 
         :param new_queue: A list of paths to audio files.
+        :param img_path: Optional path to an image (album cover)
         :type new_queue: list
+        :type img_path: string
         """
         if len(new_queue) == 0: return False
         self.queue_panel.kill()
@@ -479,6 +485,7 @@ class MusicControlPanel(Panel):
             container=self.panel,
             starting_height=1
         )
+        icon_path = img_path if img_path is not None else "icons/cd.png"
         q = []
         y = 0
         for song in new_queue:
@@ -492,22 +499,25 @@ class MusicControlPanel(Panel):
                         container=self.queue_panel,
                         object_id="#SongItem_panel",
                         file_path=song,
-                        icon_path="icons/cd.png")
+                        icon_path=icon_path)
                 y += 87
                 q.append(song)
         self.queue = q.copy()
         return True
 
-    def add_to_queue(self, new_queue: list) -> bool:
+    def add_to_queue(self, new_queue: list, img_path: str | None=None) -> bool:
         """
         Adds SongItem elements to an existing UIScrollingContainer.\n
         Returns True if at least one element was added, else False.
 
         :param new_queue: A list of paths to audio files.
+        :param img_path: Optional path to an image (album cover)
         :type new_queue: list
+        :type img_path: string
         """
         if len(new_queue) == 0: return False
 
+        icon_path = img_path if img_path is not None else "icons/cd.png"
         for song in new_queue:
             y = 87 * len(self.queue)
             tag = TinyTag.get(song)
@@ -520,7 +530,7 @@ class MusicControlPanel(Panel):
                         container=self.queue_panel,
                         object_id="#SongItem_panel",
                         file_path=song,
-                        icon_path="icons/cd.png"))
+                        icon_path=icon_path))
             self.queue.append(song)
             y += 87
         self.queue_panel.update_containing_rect_position()
@@ -721,8 +731,8 @@ class MusicControlPanel(Panel):
             elif event.ui_element == self.open_dir_btn:
                 # blocks ui, laggy when the directory is large; pygame_gui is not thread-safe
                 path = self.open_directory()
-                files = self.scan_directory(path)
-                status = self.set_queue(files)
+                files, img_path = self.scan_directory(path)
+                status = self.set_queue(files, img_path)
                 if status:
                     app.queue_changed(files)
                 self.burger_menu_panel.hide()
@@ -739,8 +749,8 @@ class MusicControlPanel(Panel):
             elif event.ui_element == self.add_dir_btn:
                 # blocks ui, laggy when the directory is large; pygame_gui is not thread-safe
                 path = self.open_directory()
-                files = self.scan_directory(path)
-                status = self.add_to_queue(files)
+                files, img_path = self.scan_directory(path)
+                status = self.add_to_queue(files, img_path)
                 if status:
                     app.queue_changed(files, added=True)
                 self.burger_menu_panel.hide()
@@ -881,13 +891,10 @@ class SongItem(pygame_gui.elements.UIPanel):
         Builds all of the UI elements.
         """
         # picture (basic icon)
-        if icon_path:
-            try:
-                image_surface = pg.image.load(icon_path).convert_alpha()
-                image_surface = pg.transform.smoothscale(image_surface, (48, 48))
-            except:
-                image_surface = None
-        else:
+        try:
+            image_surface = pg.image.load(icon_path).convert_alpha()
+            image_surface = pg.transform.smoothscale(image_surface, (48, 48))
+        except:
             image_surface = None
 
         if image_surface:

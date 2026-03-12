@@ -271,7 +271,8 @@ class App:
         self.screen_height = config_data["height"] if config_data != None else 800
 
         # the route may not exist (SAN/NAS, network drive)
-        self.queue = config_data["queue"] if config_data != None else ["04 - Beat It.flac"]
+        #self.queue = config_data["queue"] if config_data != None else ["04 - Beat It.flac"]
+        self.queue = config_data["queue"] if config_data != None else []
         self.original_queue = config_data["original_queue"] if config_data != None else self.queue.copy()
 
         freqs_gain_values = config_data["freqs_gain_values"] if config_data != None else [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -299,7 +300,8 @@ class App:
         self.clock = pg.time.Clock()
         self.font = pg.font.Font("font/Inter-VariableFont_opsz,wght.ttf", 12)
 
-        self.curr_audio_file = self.queue[0]
+        #self.curr_audio_file = self.queue[0]
+        self.curr_audio_file = ""
         self.player = AudioPlayer([], volume=self.volume)
         keys = list(self.freqs.keys())
         self.eq_q_factor = 3
