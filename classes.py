@@ -2,7 +2,8 @@ import pygame as pg
 import pygame_gui
 import easygui
 import os
-from tinytag import TinyTag
+from tinytag import TinyTag, Image
+from io import BytesIO
 from Pramník_app import State, App
 
 class Panel():
@@ -41,8 +42,6 @@ class Panel():
         :type path: string 
         """
         retarr = []
-        img_extensions = [".jpg", ".jpeg", ".png"]
-        ret_img_path = None
         if path == None: return retarr
         with os.scandir(path) as ents:
             for e in ents:
@@ -52,9 +51,7 @@ class Panel():
                     _, ext = os.path.splitext(e)
                     if ext in self.supported_extensions:
                         retarr.append(e.path)
-                    if ext in img_extensions:
-                        ret_img_path = e.path
-        return retarr, ret_img_path
+        return retarr
     
     def open_file(self) -> str:
         """
@@ -125,7 +122,7 @@ class MusicControlPanel(Panel):
             relative_rect=pg.Rect(0, self.surface.get_height() - 80, 60, 60),
             text="",
             manager=self.manager,
-            container=self.panel,
+            container=self.panel.get_container(),
             anchors={"centerx": "centerx"},
             object_id=pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                object_id="#play_button")
@@ -251,6 +248,7 @@ class MusicControlPanel(Panel):
         )
         if len(queue) > 0:
             self.set_queue(queue)
+
 
 #################################################################################
 # Burger menu
@@ -463,15 +461,13 @@ class MusicControlPanel(Panel):
             y += 50
 #################################################################################
 
-    def set_queue(self, new_queue: list, img_path: str | None=None) -> bool:
+    def set_queue(self, new_queue: list) -> bool:
         """
         Creates a new UIScrollingContainer and SongItem elements in it.\n
         Returns True if at least one element was added, else False.
 
         :param new_queue: A list of paths to audio files.
-        :param img_path: Optional path to an image (album cover)
         :type new_queue: list
-        :type img_path: string
         """
         if len(new_queue) == 0: return False
         self.queue_panel.kill()
@@ -485,54 +481,52 @@ class MusicControlPanel(Panel):
             container=self.panel,
             starting_height=1
         )
-        icon_path = img_path if img_path is not None else "icons/cd.png"
+
         q = []
         y = 0
         for song in new_queue:
             if os.path.exists(song): # ak je unreachable, trva dlhsie kym to OS zisti
-                tag = TinyTag.get(song)
+                tag = TinyTag.get(song, image=True)
+                image: Image | None = tag.images.any
                 SongItem(rect=pg.Rect(0, y, self.surface.get_width() - 90, 85),
-                        manager=self.manager,
-                        song_name=f"{tag.title}",
-                        artist=f"{tag.artist}",
-                        album=f"{tag.album}",
-                        container=self.queue_panel,
-                        object_id="#SongItem_panel",
-                        file_path=song,
-                        icon_path=icon_path)
+                    manager=self.manager,
+                    song_name=f"{tag.title}",
+                    artist=f"{tag.artist}",
+                    album=f"{tag.album}",
+                    container=self.queue_panel.get_container(),
+                    object_id="#SongItem_panel",
+                    file_path=song,
+                    image=image)
                 y += 87
                 q.append(song)
         self.queue = q.copy()
         return True
 
-    def add_to_queue(self, new_queue: list, img_path: str | None=None) -> bool:
+    def add_to_queue(self, new_queue: list) -> bool:
         """
         Adds SongItem elements to an existing UIScrollingContainer.\n
         Returns True if at least one element was added, else False.
 
         :param new_queue: A list of paths to audio files.
-        :param img_path: Optional path to an image (album cover)
         :type new_queue: list
-        :type img_path: string
         """
         if len(new_queue) == 0: return False
-
-        icon_path = img_path if img_path is not None else "icons/cd.png"
+        y = 87 * len(self.queue)
         for song in new_queue:
-            y = 87 * len(self.queue)
-            tag = TinyTag.get(song)
-            self.queue_panel.get_container().add_element(
+            if song not in self.queue:
+                tag = TinyTag.get(song, image=True)
+                image: Image | None = tag.images.any
                 SongItem(rect=pg.Rect(0, y, self.surface.get_width() - 90, 85),
                         manager=self.manager,
                         song_name=f"{tag.title}",
                         artist=f"{tag.artist}",
                         album=f"{tag.album}",
-                        container=self.queue_panel,
+                        container=self.queue_panel.get_container(),
                         object_id="#SongItem_panel",
                         file_path=song,
-                        icon_path=icon_path))
-            self.queue.append(song)
-            y += 87
+                        image=image)
+                self.queue.append(song)
+                y += 87
         self.queue_panel.update_containing_rect_position()
         return True
 
@@ -731,8 +725,8 @@ class MusicControlPanel(Panel):
             elif event.ui_element == self.open_dir_btn:
                 # blocks ui, laggy when the directory is large; pygame_gui is not thread-safe
                 path = self.open_directory()
-                files, img_path = self.scan_directory(path)
-                status = self.set_queue(files, img_path)
+                files = self.scan_directory(path)
+                status = self.set_queue(files)
                 if status:
                     app.queue_changed(files)
                 self.burger_menu_panel.hide()
@@ -749,8 +743,8 @@ class MusicControlPanel(Panel):
             elif event.ui_element == self.add_dir_btn:
                 # blocks ui, laggy when the directory is large; pygame_gui is not thread-safe
                 path = self.open_directory()
-                files, img_path = self.scan_directory(path)
-                status = self.add_to_queue(files, img_path)
+                files = self.scan_directory(path)
+                status = self.add_to_queue(files)
                 if status:
                     app.queue_changed(files, added=True)
                 self.burger_menu_panel.hide()
@@ -872,41 +866,39 @@ class SongItem(pygame_gui.elements.UIPanel):
                  song_name: str,
                  artist: str,
                  album: str,
-                 container: pygame_gui.core.UIContainer,
                  object_id: pygame_gui.core.ObjectID,
                  file_path: str,
-                 icon_path: str | None = None):
+                 container: pygame_gui.core.UIContainer | None=None,
+                 image: Image | None = None):
         super().__init__(relative_rect=rect, manager=manager, container=container, object_id=object_id)
         self.file_path = file_path
         self.song_name = os.path.basename(file_path) if song_name == "None" else song_name
         self.artist = artist if artist != "None" else ""
         self.album = f"- {album}" if album != "None" else ""
-
         song_name_y = 32 if song_name == "None" else 19
-        self.build_ui(rect, manager, file_path, icon_path, song_name_y)
+        self.build_ui(rect, manager, file_path, image, song_name_y)
 
 
-    def build_ui(self, rect, manager, file_path, icon_path, song_name_y):
+    def build_ui(self, rect, manager, file_path, image, song_name_y):
         """
         Builds all of the UI elements.
         """
-        # picture (basic icon)
-        try:
-            image_surface = pg.image.load(icon_path).convert_alpha()
-            image_surface = pg.transform.smoothscale(image_surface, (48, 48))
-        except:
-            image_surface = None
-
-        if image_surface:
-            self.icon = pygame_gui.elements.UIImage(
-                relative_rect=pg.Rect(16, 0, 48, 48),
-                image_surface=image_surface,
-                manager=manager,
-                container=self,
-                anchors={"centery": "centery"}
-            )
+        # album cover (if exists)
+        if image is not None:
+            image_data: bytes = image.data
+            image_surface = pg.image.load(BytesIO(image_data))
+            image_surface = pg.transform.smoothscale(image_surface, (64, 64))
         else:
-            self.icon = None
+            image_surface = pg.image.load("icons/cd.png")
+            image_surface = pg.transform.smoothscale(image_surface, (64, 64))
+
+        self.icon = pygame_gui.elements.UIImage(
+            relative_rect=pg.Rect(16, 0, 64, 64),
+            image_surface=image_surface,
+            manager=manager,
+            container=self,
+            anchors={"centery": "centery"}
+        )
 
         # transparent button the size of the entire panel; effectively a clickable panel
         self.click_area = TransparentUIButton(
@@ -919,18 +911,18 @@ class SongItem(pygame_gui.elements.UIPanel):
             path = file_path
         )
 
-        self.options_btn = pygame_gui.elements.UIButton(
-            relative_rect=pg.Rect(rect.width - 45, 0, 40, 40),
-            manager=manager,
-            text="",
-            container=self,
-            starting_height=3,
-            anchors={"centery": "centery"},
-            object_id=pygame_gui.core.ObjectID(class_id="@control_buttons",
-                                               object_id="#options_button")
-        )
+        # self.options_btn = pygame_gui.elements.UIButton(
+        #     relative_rect=pg.Rect(rect.width - 45, 0, 40, 40),
+        #     manager=manager,
+        #     text="",
+        #     container=self,
+        #     starting_height=3,
+        #     anchors={"centery": "centery"},
+        #     object_id=pygame_gui.core.ObjectID(class_id="@control_buttons",
+        #                                        object_id="#options_button")
+        # )
 
-        text_x = 80
+        text_x = 96
         self.song_name_label = pygame_gui.elements.UILabel(
             relative_rect=pg.Rect(text_x, song_name_y, -1, 25),
             text=self.song_name,

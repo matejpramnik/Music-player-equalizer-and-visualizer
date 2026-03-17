@@ -183,7 +183,7 @@ def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
             raise ValueError("Unsupported sample width")
 
         while True:
-            datas = wf.readframes(chunk)    # kazdu analyzu robim z chunku o velkosti chunk
+            datas = wf.readframes(chunk)    # kazdu analyzu robim z casti o velkosti chunk
             if not datas:
                 break
 
@@ -370,7 +370,7 @@ class App:
         self.__run()
     
 
-    def __visualize(self, rate: int, chunk: int, freq_interval: tuple, working_data: list) -> None:
+    def __visualize(self, rate: int, chunk_size: int, freq_interval: tuple, working_data: list) -> None:
         """
         Private method, should not be called explicitly.\n
         Creates one frame of "basic"-type visualization, draws it onto a vis_panel surface.
@@ -380,7 +380,7 @@ class App:
         counter = 0
         f_min = freq_interval[0]
         f_max = freq_interval[1]
-        fps = rate / chunk
+        fps = rate / chunk_size
         factor = self.vis_panel.rect.width / 261
         #freq_bin_color = (252, 252, 252) if self.theme == 0 else (24, 52, 78)
 
@@ -389,6 +389,7 @@ class App:
         for j,v in enumerate(working_data):
             vis_gain = 0
             f = j * fps
+            #print(f)
             if f < f_min or f > f_max:
                 counter += 1
                 continue
@@ -806,6 +807,7 @@ class App:
                 random.shuffle(self.queue)
             self.state = State.INITIAL
             self.initial_data_loaded = True
+        self.control_panel.queue = self.queue.copy()
 
     def set_player_position(self, position: int) -> None:
         """
@@ -880,6 +882,7 @@ class App:
         self.screen_height = height
         self.display = pg.display.set_mode((width, height))
 
+        self.manager.clear_and_reset()
         self.manager.set_window_resolution((self.screen_width, self.screen_height))
         self.control_panel.redraw(self.vis_start, self.screen_height, self.original_queue.copy())
         self.vis_panel.redraw(self.screen_width - self.vis_start, self.screen_height)
