@@ -9,7 +9,7 @@ class AudioPlayer():
         self.rate = rate
         self.chunk_size = chunk_size
         self.board = board
-        self.gain = volume
+        self.gain = pow(2, volume) - 1
         
         self.finished = False
         self.position = 0
@@ -194,13 +194,14 @@ class AudioPlayer():
 
     def set_volume(self, gain: float) -> None:
         """
-        Set positive value for linear volume gain.
+        Sets volume gain (logarithmically).
 
         :param gain: <0.0, 1.0>
         :type gain: float
         """
+        volume = pow(2, gain) - 1
         with self.lock:
-            self.gain = gain
+            self.gain = volume
 
     def terminate_player(self) -> None:
         """
