@@ -425,7 +425,7 @@ class App:
 
         for iter in range(vis_num, 0, -1):
             working_data = data[position + iter] if (0 <= (position + iter) < len(data)) else data[position - vis_num]
-            working_data = working_data * scale_value
+            working_data = working_data * scale_value * 1.5
 
             r = max(0, 255 - iter * 5)
             g = 20
@@ -886,6 +886,8 @@ class App:
         self.manager.set_window_resolution((self.screen_width, self.screen_height))
         self.control_panel.redraw(self.vis_start, self.screen_height, self.original_queue.copy())
         self.vis_panel.redraw(self.screen_width - self.vis_start, self.screen_height)
+        # queue sync
+        self.control_panel.queue = self.queue.copy()
         self.control_panel.mark_played()
 
 
