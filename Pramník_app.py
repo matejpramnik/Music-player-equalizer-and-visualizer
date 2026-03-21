@@ -34,6 +34,7 @@ def load_frames_folder(path: str) -> list:
 
 def calculate_vis_gain(freqs: dict, q: float, frequency: int) -> float:
     """
+    Legacy version for one frequency\n
     Calculates the gain for a specific frequency, the middle frequency of an equalizer band and a Q value. Only affects frequencies in the -3 dB bandwidth.
 
     :param freqs: A dictionary of middle frequencies of an equalizer's peak filters with their gains.
@@ -49,9 +50,33 @@ def calculate_vis_gain(freqs: dict, q: float, frequency: int) -> float:
         if (center_freq - bw) <= frequency <= (center_freq + bw):
             # gain je v intervale <-120, 120>
             # 1 / 10 sluzi ako normalizovanie do intervalu <-12, 12>, tieto hodnoty moze vis_gain nadobudat
-            #return gain / (10 * (1 + q2 * ((frequency / center_freq) - (center_freq / frequency))**2))
-            return gain / (10 * (1 + q * q * ((frequency**2 - center_freq**2)**2 / (frequency**2 * center_freq**2))))
+            return gain / (10 * (1 + (q*q) * ((frequency / center_freq) - (center_freq / frequency))**2))
+            #return gain / (10 * (1 + q * q * ((frequency**2 - center_freq**2)**2 / (frequency**2 * center_freq**2))))
     return 0
+
+def compute_gains(frequencies: np.ndarray, center_freqs: np.ndarray, gains: np.ndarray, active: np.ndarray, q: float) -> np.ndarray:
+    """
+    Calculates the gain for all frequencies, the middle frequency of an equalizer band and a Q value. Additive.
+
+    :param frequencies: Frequency for which the value should be calculated.
+    :param center_freqs: An array of middle frequencies of an equalizer's peak filters with their gains.
+    :param gains: Gains of the filters (in decibels)
+    :param active: Which frequencies are affected by the eq.
+    :param q: Q factor.
+    
+    :type frequencies: NDArray
+    :type center_freqs: NDArray
+    :type gains: NDArray
+    :type active: NDArray
+    :type q: float
+    """
+    q_sq = q * q
+    r = frequencies[:, None] / center_freqs[None, :]  # shape (257, 10)
+    detuning = r - (1.0 / (r + 1e-12))
+    # gains are in range <-120, 120>
+    band_gains = gains / (10.0 * (1.0 + q_sq * (detuning ** 2)))
+    band_gains[:, ~active] = 0.0
+    return band_gains.sum(axis=1)  # shape (257,) in dB; range <-12, 12>
 
 def normalize_audio(samples: np.ndarray) -> np.ndarray:
     """
@@ -66,8 +91,7 @@ def normalize_audio(samples: np.ndarray) -> np.ndarray:
     sabs = np.abs(s)
     max_val = np.max(sabs)
 
-    if max_val <= 1e-12:
-        return samples
+    if max_val <= 1e-12: return samples
 
     scale = target / max_val
     return s * scale
@@ -80,11 +104,11 @@ def calculate_magnitudes(datas: np.ndarray) -> np.ndarray:
     :type datas: numpy array
     """
 
-    # hanning window function sa casto pouziva, ocisti data, mensie side lobes, cistejsi vysledok
+    # hanning window function, smaller side lobes
     window = np.hanning(len(datas))
     data = datas * window
 
-    # rfft uz vracia iba "polovicu" frekvencii (rate / 2)
+    # rfft returns (len(datas) / 2 + 1) values (257 if len(datas) is 512)
     fft_complex = np.fft.rfft(data)
     magnitudes = np.abs(fft_complex)
 
@@ -133,6 +157,7 @@ def any_audio_to_wav(path: str) -> bytes:
 def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
     """
     Calculates the data needed for visualizing and playing audio.
+    Resamples the file (if needed) to 44100Hz 16bit PCM.
     Normalizes (using peak normalization) the data for playback.
     Returns via the "retval" parameter.
 
@@ -141,10 +166,6 @@ def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
     :type curr_audio_file: string
     :type retval: multiprocessing.Queue
     """
-
-    # otvori subor, ziska data, spolu s metadatmi ich da do zoznamu, prvy element
-    # return - nic, tato funkcia je volana v druhom vlakne
-    # taktiez zrobi resampling na 44,1 kHz
 
     if not curr_audio_file.endswith(".wav"):
         wave_bytes = any_audio_to_wav(curr_audio_file)
@@ -157,20 +178,17 @@ def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
             wave_audio_file = BytesIO(wave_bytes)
         temp.close()
         
-    # tu uz su urcite wave subory so sampling rate 44100Hz
+    # here, the file is 44100Hz 16bit
     with wave.open(wave_audio_file, "rb") as wf:
         channels = wf.getnchannels()
         rate = wf.getframerate()
         sampwidth = wf.getsampwidth()
-        chunk = 512 # vacsi chunk = viac vyslednych frekvencnych rozsahov (chunk/2 freq rozsahov)
-        #frame_size = sampwidth * channels
-        
+        chunk = 512
         freq = (16, 22050)
-        # netreba odignorovat header, to wave robi automaticky
-        #wf.readframes(int(44 / frame_size))
         ret_data = []
         sound_data = []
 
+        # legacy
         if sampwidth == 1:
             dtype_ = np.uint8
         elif sampwidth == 2:
@@ -183,56 +201,27 @@ def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
             raise ValueError("Unsupported sample width")
 
         while True:
-            datas = wf.readframes(chunk)    # kazdu analyzu robim z casti o velkosti chunk
+            datas = wf.readframes(chunk)    # read "chunk" amount of frames
             if not datas:
                 break
 
-            # pre vizualizaciu nechavam povodnu implementaciu
+            # visualization data
             data = np.frombuffer(datas, dtype=dtype_)
             cdata = data
             if channels == 2:      # stereo -> mono
                 cdata = cdata.reshape(-1, channels)
                 cdata = np.mean(cdata, axis=1, dtype=np.float32)
             calculated = calculate_magnitudes(cdata)
+            ret_data.append(calculated)
 
-            # pre sounddevice to musim z prekladanych kanalov dostat na (data, channels) + dat a float32
+            # playback data
+            #   sounddevice needs shape (data, channels) + dtype float32
             data = data.astype(np.float32, copy=False)
             data = data.reshape(-1, channels)
             sound_data.append(data)
 
-            # if log_scale:
-            #     #TODO:
-            #     # logaritmicka os x
-            #     #  nejak sa to scaluje, ale neviem ako
-            #     freqs = np.fft.rfftfreq(chunk//2, 1/rate)[:-1]
-            #     log = np.logspace(np.log10(freq[0]),
-            #                     np.log10(freq[1]),
-            #                     chunk // 4 + 1)
-            #     band_idx = np.digitize(freqs, log) - 1
-
-            #     log_mag = np.zeros(chunk // 4)
-            #     counts = np.zeros(chunk // 4)
-
-            #     for k, b in enumerate(band_idx):
-            #         if 0 <= b < chunk // 4:
-            #             log_mag[b] += calculated[k]
-            #             counts[b] += 1
-
-            #     nonzero = counts > 0
-            #     log_mag[nonzero] /= counts[nonzero]
-
-            #     ret_data.append(log_mag)
-
-            # if log_volume:
-            #     # logaritmicka hlasitost
-            #     calculated = 1000 * np.log10(calculated + 1e-12)
-            #     #calculated = np.clip(calculated, 0, rate//2)
-            #     ret_data.append(calculated)
-
-            ret_data.append(calculated)
-
-    # prevzorkovanie na 44,1 kHz
     sound_data = np.concatenate(sound_data, axis=0)
+    # legacy, should not happen
     if rate != 44100:
             sound_data = np.stack([resample_poly(ch, 44100, rate) for ch in sound_data.T], axis=1)
         
@@ -271,7 +260,6 @@ class App:
         self.screen_height = config_data["height"] if config_data != None else 800
 
         # the route may not exist (SAN/NAS, network drive)
-        #self.queue = config_data["queue"] if config_data != None else ["04 - Beat It.flac"]
         self.queue = config_data["queue"] if config_data != None else []
         self.original_queue = config_data["original_queue"] if config_data != None else self.queue.copy()
 
@@ -300,7 +288,7 @@ class App:
         self.clock = pg.time.Clock()
         self.font = pg.font.Font("font/Inter-VariableFont_opsz,wght.ttf", 12)
 
-        #self.curr_audio_file = self.queue[0]
+        # audio player and eq
         self.curr_audio_file = ""
         self.player = AudioPlayer([], volume=self.volume)
         keys = list(self.freqs.keys())
@@ -320,6 +308,13 @@ class App:
             Limiter(threshold_db=-0.1)
         ])
         self.player.set_board(self.equalizer_board)
+
+        # eq gain lookup (for visualizations)
+        center_freqs = np.array(list(self.freqs.keys()), dtype=np.float32)
+        gains = np.array(list(self.freqs.values()), dtype=np.float32)
+        active = np.abs(gains) > 1e-12
+        frequencies = np.linspace(0, 22050, 257)
+        self.vis_gains = compute_gains(frequencies, center_freqs, gains, active, self.eq_q_factor)
 
         # pygame window/display things; splits the display into 2 parts
         self.display = pg.display.set_mode((self.screen_width, self.screen_height))
@@ -384,18 +379,16 @@ class App:
         factor = self.vis_panel.rect.width / 261
         #freq_bin_color = (252, 252, 252) if self.theme == 0 else (24, 52, 78)
 
-        q = self.eq_q_factor
-        freqs = self.freqs.items()
         for j,v in enumerate(working_data):
             vis_gain = 0
             f = j * fps
-            #print(f)
+
             if f < f_min or f > f_max:
                 counter += 1
                 continue
 
             # eq taken into account:
-            vis_gain = calculate_vis_gain(freqs, q, f)
+            vis_gain = self.vis_gains[j]
             vis_gain_multiplier = 10 ** (vis_gain / 20)
 
             color = np.clip((255-j, 1+j, 0), 0, 255)
@@ -443,7 +436,7 @@ class App:
                     continue
 
                 # eq taken into account:
-                vis_gain = calculate_vis_gain(freqs, q, f)
+                vis_gain = self.vis_gains[j]
                 vis_gain_multiplier = 10 ** (vis_gain / 20)
 
                 x = j * factor + level_offset * (iter - 1) + 5
@@ -486,7 +479,7 @@ class App:
                 continue
 
             # eq taken into account:
-            vis_gain = calculate_vis_gain(freqs, q, f)
+            vis_gain = self.vis_gains[j]
             vis_gain_multiplier = 10 ** (vis_gain / 20)
 
             color = np.clip((1 + j, 0, 255 - j), 0, 255)
@@ -527,7 +520,7 @@ class App:
 
         while self.running:
 
-            # check device change
+            # check for device change
             device = AudioUtilities.GetSpeakers()
             if device.id != self.output_device.id:
                 self.output_device = device
@@ -560,8 +553,11 @@ class App:
                         json.dump(save_config, f)
 
                     quit()
+                elif event.type == pygame_gui.UI_BUTTON_PRESSED or \
+                    event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED or \
+                    event.type == pg.MOUSEBUTTONDOWN:
+                    self.control_panel.handle_event(event, self)
                 self.manager.process_events(event)
-                self.control_panel.handle_event(event, self)
 
             # erases the previous iteration of vis + clock tick
             self.vis_panel.surface.fill((232, 241, 242) if self.theme == 1 else (10,12,16))
@@ -581,10 +577,8 @@ class App:
                     self.player.play()
 
 
-
             elif self.state == State.INITIAL:
                 do_nothing = True
-
 
 
             elif self.state == State.DATA_LOADING:
@@ -599,7 +593,6 @@ class App:
                 frame_rect = frame_surface.get_rect()
                 frame_rect.center = (self.vis_panel.rect.width // 2, self.vis_panel.rect.height // 2)
                 self.vis_panel.surface.blit(frame_surface, frame_rect)
-
 
 
             elif self.state == State.PLAYING or self.state == State.PAUSED:
@@ -643,7 +636,6 @@ class App:
                     self.__visualize_circle(rate, chunk, freq_interval, working_data, i)
 
                 ############################################################################################
-
 
 
             # blit and flip (order of operations must be preserved)
@@ -707,6 +699,13 @@ class App:
                 # value can be in <-120, 120> - higher resolution
                 filter.gain_db = value / 10
                 self.freqs[frequency] = value
+
+                # vis_gain lookup
+                center_freqs = np.array(list(self.freqs.keys()), dtype=np.float32)
+                gains = np.array(list(self.freqs.values()), dtype=np.float32)
+                active = np.abs(gains) > 1e-12
+                frequencies = np.linspace(0, 22050, 257)
+                self.vis_gains = compute_gains(frequencies, center_freqs, gains, active, self.eq_q_factor)
                 break
 
     def change_volume(self, value: float) -> None:
