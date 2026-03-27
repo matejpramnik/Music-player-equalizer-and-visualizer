@@ -356,7 +356,7 @@ class App:
         self.loading_frames = load_frames_folder(icon_path)
 
         # visualization types
-        self.vis_num = 3
+        self.vis_num = 4
         self.fps = 44100 / 512
 
         self.running = True
@@ -413,9 +413,6 @@ class App:
         factor = self.vis_panel.rect.width / 261
         level_offset = self.vis_panel.rect.width / 90
 
-        q = self.eq_q_factor
-        freqs = self.freqs.items()
-
         for iter in range(vis_num, 0, -1):
             working_data = data[position + iter] if (0 <= (position + iter) < len(data)) else data[position - vis_num]
             working_data = working_data * scale_value * 1.5
@@ -459,9 +456,6 @@ class App:
         f_max = freq_interval[1]
         fps = rate / chunk
 
-        q = self.eq_q_factor
-        freqs = self.freqs.items()
-
         x_start = self.vis_panel.surface.get_width() // 2
         y_start = self.vis_panel.surface.get_height() // 2
 
@@ -498,6 +492,61 @@ class App:
             counter += 1
 
 
+    def __visualize_circle_3d(self, rate: int, chunk: int, freq_interval: tuple, data: list, position: int, scale_value: float) -> None:
+        """
+        Private method, should not be called explicitly.\n
+        Creates one frame of "3D circle" type visualization, draws it onto a vis_panel surface.
+        """
+
+        f_min = freq_interval[0]
+        f_max = freq_interval[1]
+        fps = rate / chunk
+
+        x_start = self.vis_panel.surface.get_width() // 2
+        y_start = self.vis_panel.surface.get_height() // 2
+
+        lines_num = 258
+        angles_rad = np.linspace(0, 2*np.pi, lines_num, endpoint=False)
+        sin_table = np.sin(angles_rad)
+        cos_table = np.cos(angles_rad)
+
+        for iter in range(11, 0, -1):
+            working_data = data[position - 4*iter] if position > 4*iter else data[0]
+            working_data = working_data * scale_value * 1.5
+            counter = 0
+
+            r = 30
+            g = max(0, 170 - iter * 5)
+            b = min(255, 200 + iter * 3)
+            a = min(255, 255 // iter + 30)
+            color = (r, g, b, a)
+
+            for j,v in enumerate(working_data):
+                
+                vis_gain = 0
+                f = j * fps
+                if f < f_min or f > f_max:
+                    counter += 1
+                    continue
+
+                # eq taken into account:
+                vis_gain = self.vis_gains[j]
+                vis_gain_multiplier = 10 ** (vis_gain / 20)
+                
+                line_length = (v * vis_gain_multiplier)
+                line_length = 0 if line_length < 0 else line_length
+                index = (counter + (position // 4)) % len(sin_table)
+
+                x_s = x_start + (30 + 22*iter) * sin_table[index]
+                y_s = y_start + (30 + 22*iter) * cos_table[index]
+                x = line_length * sin_table[index]
+                y = line_length * cos_table[index]
+                e_x, e_y = int(round(x_s + x)), int(round(y_s + y))
+                
+                pg.draw.aaline(self.vis_panel.surface, color, (x_s, y_s), (e_x, e_y), width = 2)
+                counter += 1
+
+
     def __run(self) -> None:
         """
         Private method, should not be called explicitly.\n
@@ -530,7 +579,9 @@ class App:
             # sync
             self.control_panel.currently_played_queue_index = self.currently_played_queue_index
             # event handling + UI update
+            self.manager.update(1 / self.fps)
             for event in pg.event.get():
+                self.manager.process_events(event)
                 if event.type == pg.QUIT:
                     self.running = False
                     self.player.terminate_player()
@@ -551,17 +602,15 @@ class App:
                     }
                     with open("config.json", "w") as f:
                         json.dump(save_config, f)
-
                     quit()
+
                 elif event.type == pygame_gui.UI_BUTTON_PRESSED or \
                     event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED or \
                     event.type == pg.MOUSEBUTTONDOWN:
                     self.control_panel.handle_event(event, self)
-                self.manager.process_events(event)
 
             # erases the previous iteration of vis + clock tick
             self.vis_panel.surface.fill((232, 241, 242) if self.theme == 1 else (10,12,16))
-            self.manager.update(1 / self.fps)
             self.manager.draw_ui(self.display)
             dt = self.clock.tick(self.fps)
             self.control_panel.update_ui(self.state, self.player.get_position_s(), self.player.get_song_length_s())
@@ -634,6 +683,10 @@ class App:
                 # circle
                 elif self.vis_type == 3:
                     self.__visualize_circle(rate, chunk, freq_interval, working_data, i)
+
+                # circle 3D
+                elif self.vis_type == 4:
+                    self.__visualize_circle_3d(rate, chunk, freq_interval, processed_vis_data, i, scale_value)
 
                 ############################################################################################
 

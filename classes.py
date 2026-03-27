@@ -116,7 +116,13 @@ class MusicControlPanel(Panel):
         super().redraw(width, height)
         self.build_ui(queue)
 
-    def build_ui(self, queue) -> None:
+    def build_ui(self, queue: list) -> None:
+        """
+        Builds the GUI.
+
+        :param queue: The queue to display
+        :type queue: list
+        """
         
         self.play_stop_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(0, self.surface.get_height() - 80, 60, 60),
@@ -248,7 +254,6 @@ class MusicControlPanel(Panel):
         )
         if len(queue) > 0:
             self.set_queue(queue)
-
 
 #################################################################################
 # Burger menu
