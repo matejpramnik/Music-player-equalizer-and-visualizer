@@ -568,18 +568,21 @@ class MusicControlPanel(Panel):
         :type file_pos_s: float
         :type file_length_s: float
         """
+
         # next/previous button hide/show
+        #   big mess
         index = self.currently_played_queue_index
         rep_queue = self.repeat_queue
+        rep_one = self.repeat_one
         q_len = len(self.queue)
         state_name = state.name
-        if index == q_len - 1 and self.next_btn.visible and not rep_queue:
+        if index == q_len - 1 and self.next_btn.visible and not rep_queue and not rep_one:
             self.next_btn.hide()
-        elif (index < q_len - 1 or rep_queue) and not self.next_btn.visible:
+        elif (index < q_len - 1 or rep_queue or rep_one) and not self.next_btn.visible and q_len != 1:
             self.next_btn.show()
-        if index == 0 and self.previous_btn.visible and not rep_queue:
+        if index == 0 and self.previous_btn.visible and not rep_queue and not rep_one:
             self.previous_btn.hide()
-        elif (index > 0 or rep_queue) and not self.previous_btn.visible:
+        elif (index > 0 or rep_queue or rep_one) and not self.previous_btn.visible and q_len != 1:
             self.previous_btn.show()
 
         # speaker/mute

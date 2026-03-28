@@ -796,6 +796,10 @@ class App:
 
         # the user has clicked (messy)
         if clicked_back or clicked_next:
+            if self.repeat_one:
+                next_index = self.currently_played_queue_index
+                self.change_song(self.curr_audio_file, bypass_loading=True)
+                return
             if clicked_back:
                 next_index = self.currently_played_queue_index - 1
             elif clicked_next:
