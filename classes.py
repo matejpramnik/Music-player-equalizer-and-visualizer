@@ -860,6 +860,29 @@ class MusicControlPanel(Panel):
                     self.burger_menu_panel.hide()
                     self.window_size_menu_panel.hide()
 
+    def handle_scrolling(self, event: pg.Event) -> None:
+        """
+        Handles the queue panel scrolling. Gets rid of the UIScrollingContainer's deceleration after scrolling.
+
+        :param event: Pygame Event
+        """
+        # scroll position (pixels)
+        current_y = -self.queue_panel.scrollable_container.relative_rect.y
+        max_scroll = self.queue_panel.scrolling_height - self.queue_panel._view_container.rect.height
+
+        new_y = max(0, min(current_y - event.y * 30, max_scroll))
+        self.queue_panel.scrollable_container.set_relative_position(
+            (self.queue_panel.scrollable_container.relative_rect.x, -new_y)
+        )
+
+        # scrollbar sync
+        if self.queue_panel.scrolling_height > 0:
+            self.queue_panel.vert_scroll_bar.set_scroll_from_start_percentage(
+                new_y / self.queue_panel.scrolling_height
+            )
+            # stop the momentum
+            self.queue_panel.vert_scroll_bar.rebuild()
+
 
 class VisPanel(Panel):
     def __init__(self, rect, manager):

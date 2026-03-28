@@ -581,7 +581,6 @@ class App:
             # event handling + UI update
             self.manager.update(1 / self.fps)
             for event in pg.event.get():
-                self.manager.process_events(event)
                 if event.type == pg.QUIT:
                     self.running = False
                     self.player.terminate_player()
@@ -608,6 +607,12 @@ class App:
                     event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED or \
                     event.type == pg.MOUSEBUTTONDOWN:
                     self.control_panel.handle_event(event, self)
+                if event.type == pg.MOUSEWHEEL:
+                    if self.control_panel.queue_panel.hover_point(*pg.mouse.get_pos()):
+                        self.control_panel.handle_scrolling(event)
+                        continue # disables the weird deceleration
+                    
+                self.manager.process_events(event)
 
             # erases the previous iteration of vis + clock tick
             self.vis_panel.surface.fill((232, 241, 242) if self.theme == 1 else (10,12,16))
