@@ -182,7 +182,8 @@ class MusicControlPanel(Panel):
             value_range=(0, 1),
             click_increment=0.01,
             anchors={"centerx": "centerx"},
-            object_id=pygame_gui.core.ObjectID(object_id="#volume_slider")
+            object_id=pygame_gui.core.ObjectID(object_id="#volume_slider",
+                                               class_id="@sliders")
         )
 
         self.volume_btn = pygame_gui.elements.UIButton(
@@ -224,7 +225,8 @@ class MusicControlPanel(Panel):
             click_increment=5,
             start_value=0,
             anchors={"centerx": "centerx"},
-            object_id="#audio_file_progress_slider"
+            object_id=pygame_gui.core.ObjectID(object_id="#audio_file_progress_slider",
+                                               class_id="@sliders")
         )
 
         self.time_progress_label = TimeUILabel(
@@ -813,7 +815,7 @@ class MusicControlPanel(Panel):
 
             elif event.ui_element == self.vocal_preset_btn:
                 # boosts frequencies where vocals typically exist
-                gains = [0, 10, 20, 60, 70, 50, 20, 5, 0, 0]
+                gains = [0, 0, 0, 20, 60, 70, 70, 60, 20, 0]
                 for i in range(10):
                     self.eq_sliders[i].slider.set_current_value(gains[i])
                     app.change_eq(self.eq_sliders[i].frequency, gains[i])
@@ -827,16 +829,16 @@ class MusicControlPanel(Panel):
             elif type(event.ui_element) is TransparentUIButton:
                 path = event.ui_element.path
                 self.currently_played_queue_index = self.queue.index(path)
-                try:
-                    self.mark_played()
-                    app.change_song(path, clicked=True)
-                except:
-                    raise NameError
+                self.mark_played()
+                app.change_song(path, clicked=True)
 
         elif event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED:
             if "#eq_slider" in event.ui_element.object_ids:
-                freq = event.ui_element.parent_element.frequency
+                # get EqualizerSliderPanel frequency
+                freq = event.ui_element.parent_element.parent_element.frequency
                 value = event.value
+                # call Slider method set_current_value()
+                event.ui_element.parent_element.set_current_value(value)
                 app.change_eq(freq, value)
                 self.freqs[freq] = value
 
@@ -1009,14 +1011,16 @@ class EqualizerSliderPanel(pygame_gui.elements.UIPanel):
         """
         Builds all of the UI elements.
         """
-        self.slider = pygame_gui.elements.UIHorizontalSlider(
-            relative_rect=pg.Rect(80, 0, rect.width - 110, 20),
+
+        self.slider = Slider(
+            relative_rect=pg.Rect(80, -2, rect.width - 110, 24),
             value_range=(-120, 120),
             start_value=start_value,
             container=self,
             parent_element=self,
             anchors={"centery": "centery"},
-            object_id=pygame_gui.core.ObjectID(object_id="#eq_slider"),
+            object_id=pygame_gui.core.ObjectID(object_id="#eq_slider",
+                                               class_id="@sliders"),
             manager=manager,
             click_increment=5
         )
@@ -1045,10 +1049,11 @@ class EqualizerSliderPanel(pygame_gui.elements.UIPanel):
         gains = [-12, -8, -4, 0, 4, 8, 12]
         for i in range(7):
             pygame_gui.elements.UILabel(
-                relative_rect=pg.Rect(x, rect.height - 15, 32, 20),
+                relative_rect=pg.Rect(x, 20, 32, 19),
                 manager=manager,
                 container=self,
                 object_id=pygame_gui.core.ObjectID(object_id="#gain_label"),
+                anchors={"centery": "centery"},
                 text=("-" + str(abs(gains[i]))) if gains[i] < 0 else ("+" + str(gains[i])) if gains[i] > 0 else "  " + str(gains[i])
             )
             x += self.slider.rect.width / 6.6
@@ -1064,14 +1069,16 @@ class Slider(pygame_gui.elements.UIPanel):
                  starting_height: int = 1,
                  value_range: tuple = (0, 1),
                  start_value: float | int = 0,
-                 click_increment: int = 1):
+                 click_increment: int = 1,
+                 parent_element: None | pygame_gui.core.UIElement = None):
         super().__init__(relative_rect=relative_rect,
                          starting_height=starting_height,
                          manager=manager,
                          container=container,
                          object_id=object_id,
-                         anchors=anchors)
-        self.build_ui(relative_rect, manager, value_range, start_value, click_increment)
+                         anchors=anchors,
+                         parent_element=parent_element)
+        self.build_ui(relative_rect, manager, value_range, start_value, click_increment, object_id)
         self.max_value = value_range[1]
         self.set_current_value(start_value)
 
@@ -1083,7 +1090,7 @@ class Slider(pygame_gui.elements.UIPanel):
         :param warn: set to 'False' to suppress the default warning, instead the value will be clamped.
         """
         self.wiper.set_current_value(new_value, warn)
-        width = (self.get_relative_rect().width / self.max_value) * self.get_current_value()
+        width = self.get_relative_rect().width * self.get_current_value_percentage()
         self.line_progress.set_dimensions((width, 4))
 
     def get_current_value(self) -> float | int:
@@ -1091,26 +1098,34 @@ class Slider(pygame_gui.elements.UIPanel):
         Get the current slider value.
         """
         return self.wiper.get_current_value()
+    
+    def get_current_value_percentage(self) -> float:
+        """
+        Get the current slider value in percentage. <0, 1>
+        """
+        return self.wiper.current_percentage
 
-    def build_ui(self, rect, manager, value_range, start_value, click_increment):
+    def build_ui(self, rect, manager, value_range, start_value, click_increment, object_id):
         """
         Builds all of the UI elements.
         """
         
         self.line = pygame_gui.elements.UIPanel(
-            relative_rect=pg.Rect(2, rect.height // 2 - 1, rect.width - 2, 4),
+            relative_rect=pg.Rect(2, 0, rect.width - 2, 4),
             manager=manager,
             container=self,
-            starting_height=1,
-            object_id="#slider_line"
+            starting_height=0,
+            object_id="#slider_line",
+            anchors={"centery": "centery"}
         )
 
         self.line_progress = pygame_gui.elements.UIPanel(
-            relative_rect=pg.Rect(2, rect.height // 2 - 1, 0, 4),
+            relative_rect=pg.Rect(2, 0, 0, 4),
             manager=manager,
             container=self,
-            starting_height=2,
-            anchors={"left": "left"},
+            starting_height=1,
+            anchors={"left": "left",
+                     "centery": "centery"},
             object_id="#slider_line_progress"
         )
 
@@ -1122,7 +1137,7 @@ class Slider(pygame_gui.elements.UIPanel):
             parent_element=self,
             manager=manager,
             click_increment=click_increment,
-            object_id="#slider_wiper",
+            object_id=object_id,
         )
 
 
@@ -1143,7 +1158,7 @@ class TimeUILabel(pygame_gui.elements.UILabel):
         :type time_s: float
         """
         self.time_s = time_s
-        self.minutes = int(time_s / 60)
+        self.minutes = int(round(time_s) / 60)
         self.seconds = round(time_s) % 60
 
         text = f"{self.minutes}:{self.seconds:02d}"
