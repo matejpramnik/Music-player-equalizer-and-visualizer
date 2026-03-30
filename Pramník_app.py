@@ -1,17 +1,11 @@
 import os
-import random
 import numpy as np
-import ctypes
-import json
 import subprocess
 import wave
 from io import BytesIO
-from enum import Enum
-from pycaw.pycaw import AudioUtilities
 from multiprocessing import Process, Queue, freeze_support
-from pedalboard import Pedalboard, PeakFilter, Limiter, Gain
 from scipy.signal import resample_poly
-from audio_player import AudioPlayer
+from enum import Enum
 
 
 def load_frames_folder(path: str) -> list:
@@ -954,10 +948,16 @@ class App:
 
 
 if __name__ == "__main__":
-    freeze_support()
-    # pygame import here, because of multiprocessing and the Windows spawn() method
+    #freeze_support()
+    # imports here to prevent importing at every process spawn
     import pygame as pg
     import pygame_gui
+    import random
+    import ctypes
+    import json
+    from pycaw.pycaw import AudioUtilities
+    from pedalboard import Pedalboard, PeakFilter, Limiter, Gain
+    from audio_player import AudioPlayer
 
     # the window should not scale automatically (pygame thing)
     ctypes.windll.shcore.SetProcessDpiAwareness(2)

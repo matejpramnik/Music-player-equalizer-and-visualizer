@@ -1,7 +1,7 @@
 import threading
 from pedalboard import Pedalboard
 import sounddevice as sd
-from time import monotonic
+from time import monotonic, sleep
 
 class AudioPlayer():
     def __init__(self, audio: list, board:Pedalboard | None=None, rate=44100, chunk_size=16384, volume=0.5):
@@ -75,15 +75,19 @@ class AudioPlayer():
         :type rate: integer
         :type blocksize: integer
         """
-        with self.lock:
-            self.stream = sd.OutputStream(
-                samplerate=rate,
-                blocksize=blocksize,
-                channels=2,
-                latency="low",
-                device=device, # None -> uses the default device (currently selected output device in Windows)
-                callback=self._callback,
-                finished_callback=self._on_finished)
+        try:
+            with self.lock:
+                self.stream = sd.OutputStream(
+                    samplerate=rate,
+                    blocksize=blocksize,
+                    channels=2,
+                    latency="low",
+                    device=device, # None -> uses the default device (currently selected output device in Windows)
+                    callback=self._callback,
+                    finished_callback=self._on_finished)
+        except:
+            sleep(1)
+            self._stream(rate, blocksize, device)
         
     def play(self) -> None:
         """

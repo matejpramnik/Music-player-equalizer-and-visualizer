@@ -390,7 +390,7 @@ class MusicControlPanel(Panel):
 #################################################################################
 # equalizer panel
         self.eq_panel = pygame_gui.elements.UIPanel(
-            relative_rect=pg.Rect(15, 0, self.surface.get_width() - 20, self.surface.get_height() - 230),
+            relative_rect=pg.Rect(15, 0, self.surface.get_width() - 20, self.surface.get_height() - 230), #width 630
             manager=self.manager,
             container=self.panel,
             starting_height=5,
@@ -410,7 +410,7 @@ class MusicControlPanel(Panel):
         )
 
         self.flat_preset_btn = pygame_gui.elements.UIButton(
-            relative_rect=pg.Rect(0, 80, 75, 40),
+            relative_rect=pg.Rect(0, 115, 75, 40),
             text="Flat",
             manager=self.manager,
             container=self.eq_panel,
@@ -455,15 +455,17 @@ class MusicControlPanel(Panel):
         )
 
         self.eq_sliders = []
+        # vert: 52px width na jeden
         y = 5
         for freq, gain in self.freqs.items():
-            slider_panel = EqualizerSliderPanel(rect=pg.Rect(-30, y, 420, 50),
-                                         manager=self.manager,
-                                         container=self.eq_panel,
-                                         frequency=freq,
-                                         start_value=gain,
-                                         anchors={"centerx": "centerx"},
-                                         object_id="#eq_slider_panel")
+            slider_panel = EqualizerSliderPanel(
+                rect=pg.Rect(-30, y, 420, 50),
+                manager=self.manager,
+                container=self.eq_panel,
+                frequency=freq,
+                start_value=gain,
+                anchors={"centerx": "centerx"},
+                object_id="#eq_slider_panel")
             self.eq_sliders.append(slider_panel)
             y += 50
 #################################################################################
@@ -1064,7 +1066,7 @@ class Slider(pygame_gui.elements.UIPanel):
                  relative_rect: pg.Rect,
                  container: pygame_gui.core.UIContainer,
                  object_id: pygame_gui.core.ObjectID,
-                 manager,
+                 manager: pygame_gui.UIManager,
                  anchors,
                  starting_height: int = 1,
                  value_range: tuple = (0, 1),
