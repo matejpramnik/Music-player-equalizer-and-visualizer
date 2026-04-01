@@ -180,6 +180,7 @@ def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
         chunk = 512
         freq = (16, 22050)
         ret_data = []
+        ret_data_divided = [[] for _ in range(channels)]
         sound_data = []
 
         # legacy
@@ -202,11 +203,18 @@ def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
             # visualization data
             data = np.frombuffer(datas, dtype=dtype_)
             cdata = data
-            if channels == 2:      # stereo -> mono
-                cdata = cdata.reshape(-1, channels)
-                cdata = np.mean(cdata, axis=1, dtype=np.float32)
-            calculated = calculate_magnitudes(cdata)
+            if channels > 1:      # stereo -> mono
+                data_together = cdata.reshape(-1, channels)
+                data_together = np.mean(data_together, axis=1, dtype=np.float32)
+            calculated = calculate_magnitudes(data_together)
             ret_data.append(calculated)
+
+            # divided data for each channel
+            for i in range(channels):
+                length = len(cdata)
+                one_channel_data = cdata[i:length:channels]
+                one_channel_data_calculated = calculate_magnitudes(one_channel_data)
+                ret_data_divided[i].append(one_channel_data_calculated)
 
             # playback data
             #   sounddevice needs shape (data, channels) + dtype float32
@@ -217,11 +225,11 @@ def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
     sound_data = np.concatenate(sound_data, axis=0)
     # legacy, should not happen
     if rate != 44100:
-            sound_data = np.stack([resample_poly(ch, 44100, rate) for ch in sound_data.T], axis=1)
+        sound_data = np.stack([resample_poly(ch, 44100, rate) for ch in sound_data.T], axis=1)
         
     sound_data = normalize_audio(sound_data)
 
-    retval.put((rate, chunk, freq, ret_data, sound_data))
+    retval.put((rate, chunk, freq, ret_data, sound_data, ret_data_divided))
 
 
 
@@ -350,7 +358,7 @@ class App:
         self.loading_frames = load_frames_folder(icon_path)
 
         # visualization types
-        self.vis_num = 4
+        self.vis_num = 6
         self.fps = 44100 / 512
 
         self.running = True
@@ -486,6 +494,120 @@ class App:
             counter += 1
 
 
+    def __visualize_circle_peaks(self, rate: int, chunk: int, freq_interval: tuple, working_data: list, pos: int) -> None:
+        """
+        Private method, should not be called explicitly.\n
+        Creates one frame of "circle" type visualization, draws it onto a vis_panel surface.
+        """
+
+        counter = 0
+        f_min = freq_interval[0]
+        f_max = freq_interval[1]
+        fps = rate / chunk
+
+        lines_num = 258
+        angles_rad = np.linspace(0, 2*np.pi, lines_num, endpoint=False)
+        sin_table = np.sin(angles_rad)
+        cos_table = np.cos(angles_rad)
+
+        x_start = self.vis_panel.surface.get_width() // 2
+        y_start = self.vis_panel.surface.get_height() // 2
+        prev_x, prev_y = x_start, y_start
+        last_x, last_y = 0, 0
+
+        for j,v in enumerate(working_data):
+            
+            vis_gain = 0
+            f = j * fps
+            if f < f_min or f > f_max:
+                counter += 1
+                continue
+
+            # eq taken into account:
+            vis_gain = self.vis_gains[j]
+            vis_gain_multiplier = 10 ** (vis_gain / 20)
+
+            color = np.clip((1 + j, 255 - j, 30), 0, 255)
+            
+            line_length = (v * vis_gain_multiplier)
+            line_length = 0 if line_length < 0 else line_length
+            index = (counter + (pos // 4)) % len(sin_table)
+
+            x_s = x_start + 35 * sin_table[index]
+            y_s = y_start + 35 * cos_table[index]
+            x = line_length * sin_table[index]
+            y = line_length * cos_table[index]
+            e_x, e_y = int(round(x_s + x)), int(round(y_s + y))
+            if j == 1:
+                prev_x, prev_y = e_x, e_y
+                last_x, last_y = e_x, e_y
+            if j == 256:
+                e_x, e_y = last_x, last_y
+            
+            pg.draw.line(self.vis_panel.surface, color, (prev_x, prev_y), (e_x, e_y), width = 3)
+            prev_x, prev_y = e_x, e_y
+            counter += 1
+
+
+    def __visualize_circle_stereo(self, rate: int, chunk: int, freq_interval: tuple, working_data_left: list, working_data_right: list, pos: int) -> None:
+        """
+        Private method, should not be called explicitly.\n
+        Creates one frame of "circle" type visualization, draws it onto a vis_panel surface.
+        """
+
+        def draw_one_channel(channel_data: list, mid_x, mid_y):
+            counter = 0
+            f_min = freq_interval[0]
+            f_max = freq_interval[1]
+            fps = rate / chunk
+
+            lines_num = 258
+            angles_rad = np.linspace(0, 2*np.pi, lines_num, endpoint=False)
+            sin_table = np.sin(angles_rad)
+            cos_table = np.cos(angles_rad)
+
+            x_start = mid_x
+            y_start = mid_y
+            prev_x, prev_y = x_start, y_start
+            last_x, last_y = 0, 0
+
+            for j,v in enumerate(channel_data):
+                
+                vis_gain = 0
+                f = j * fps
+                if f < f_min or f > f_max:
+                    counter += 1
+                    continue
+
+                # eq taken into account:
+                vis_gain = self.vis_gains[j]
+                vis_gain_multiplier = 10 ** (vis_gain / 20)
+
+                color = np.clip((30, 255 - j, 1 + j), 0, 255)
+                
+                line_length = (v * vis_gain_multiplier)
+                line_length = 0 if line_length < 0 else line_length
+                index = (counter + (pos // 4)) % len(sin_table)
+
+                x_s = x_start + 35 * sin_table[index]
+                y_s = y_start + 35 * cos_table[index]
+                x = line_length * sin_table[index]
+                y = line_length * cos_table[index]
+                e_x, e_y = int(round(x_s + x)), int(round(y_s + y))
+                if j == 1:
+                    prev_x, prev_y = e_x, e_y
+                    last_x, last_y = e_x, e_y
+                if j == 256:
+                    e_x, e_y = last_x, last_y
+                
+                pg.draw.line(self.vis_panel.surface, color, (prev_x, prev_y), (e_x, e_y), width = 3)
+                prev_x, prev_y = e_x, e_y
+                counter += 1
+        
+        draw_one_channel(working_data_left, self.vis_panel.surface.get_width() // 4, self.vis_panel.surface.get_height() // 2)
+        draw_one_channel(working_data_right, self.vis_panel.surface.get_width() // 4 * 3, self.vis_panel.surface.get_height() // 2)
+
+
     def __visualize_circle_3d(self, rate: int, chunk: int, freq_interval: tuple, data: list, position: int, scale_value: float) -> None:
         """
         Private method, should not be called explicitly.\n
@@ -546,8 +668,8 @@ class App:
         Private method, should not be called explicitly.\n
         Contains the main pygame and event loop. This should be run only once by the class' __init__ method
         """
-        #         (rate, chunk, freq, wholeFileData, sound_data)
-        # self.vis_data = (int, int, (int, int), list, np.ndarray)
+        #         (rate, chunk, freq, wholeFileData, sound_data, wholeFileDataDivided)
+        # self.vis_data = (int, int, (int, int), list, np.ndarray, list)
         self.vis_data = tuple
         self.worker_process = None
         self.initial_data_loaded = True
@@ -614,10 +736,11 @@ class App:
             dt = self.clock.tick(self.fps)
             self.control_panel.update_ui(self.state, self.player.get_position_s(), self.player.get_song_length_s())
 
-            if self.state == State.DATA_LOADING and not self.thread_retval.empty():
+            if self.state == State.DATA_LOADING and not self.process_retval.empty():
                 # data is loaded, worker process has finished
-                self.vis_data = self.thread_retval.get()
-                self.processed_vis_data_max_val = max([np.max(chunk) for chunk in self.vis_data[3]])
+                self.vis_data = self.process_retval.get()
+                # maximum value in any channel
+                self.processed_vis_data_max_val = max(np.max(chunk) for outer in self.vis_data[5] for chunk in outer)
                 self.player.set_audio(self.vis_data[4])
                 self.worker_process.join()
                 if not self.initial_data_loaded:
@@ -645,7 +768,7 @@ class App:
 
             elif self.state == State.PLAYING or self.state == State.PAUSED:
                 # is either playing, or is paused; draw the visualization
-                rate, chunk, freq_interval, processed_vis_data, _ = self.vis_data
+                rate, chunk, freq_interval, processed_vis_data, _, processed_vis_data_divided = self.vis_data
 
                 fps = rate / chunk
                 if self.state == State.PAUSED: curr = self.player.get_position_s(True)
@@ -665,9 +788,11 @@ class App:
                 #visualizations:
 
                 working_data = processed_vis_data[i]
+                working_data_divided = [channel[i] for channel in processed_vis_data_divided]
                 if self.processed_vis_data_max_val > 0.0:
                     scale_value = self.screen_height / self.processed_vis_data_max_val
                     working_data = working_data * scale_value * 1.5
+                    working_data_divided = [channel * (scale_value / 2) for channel in working_data_divided]
 
                 # basic
                 if self.vis_type == 1:
@@ -687,6 +812,14 @@ class App:
                 elif self.vis_type == 4:
                     self.__visualize_circle_3d(rate, chunk, freq_interval, processed_vis_data, i, scale_value)
 
+                # circle peaks
+                elif self.vis_type == 5:
+                    self.__visualize_circle_peaks(rate, chunk, freq_interval, working_data, i)
+
+                # circle stereo
+                elif self.vis_type == 6:
+                    self.__visualize_circle_stereo(rate, chunk, freq_interval, working_data_divided[0], working_data_divided[1], i)
+
                 ############################################################################################
 
 
@@ -705,14 +838,14 @@ class App:
         # this method is called only by change_song()
         self.curr_audio_file = path
         if not bypass_loading:
-            self.thread_retval = Queue()
+            self.process_retval = Queue()
             if self.worker_process is not None and self.worker_process.is_alive():
                 # get_vis_data only reads the files (+ffmpeg); data corruption won't happen; can terminate
                 self.worker_process.terminate()
                 self.worker_process.join()
             self.worker_process = Process(target=get_vis_data,
                              args=(self.curr_audio_file,
-                                   self.thread_retval))
+                                   self.process_retval))
             self.worker_process.start()
         else:
             self.player.seek(0)

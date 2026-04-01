@@ -1,6 +1,7 @@
 import threading
 from pedalboard import Pedalboard
 import sounddevice as sd
+import numpy as np
 from time import monotonic, sleep
 
 class AudioPlayer():
@@ -80,7 +81,6 @@ class AudioPlayer():
                 self.stream = sd.OutputStream(
                     samplerate=rate,
                     blocksize=blocksize,
-                    channels=2,
                     latency="low",
                     device=device, # None -> uses the default device (currently selected output device in Windows)
                     callback=self._callback,
@@ -126,7 +126,7 @@ class AudioPlayer():
 
     def seek(self, seconds: float) -> None:
         """
-        Set audio player's postion, in seconds.
+        Set audio player"s postion, in seconds.
 
         :param seconds: Number of seconds since the start of the audio file to seek to.
         :type seconds: float
@@ -193,8 +193,13 @@ class AudioPlayer():
         :param audio: Raw audio data for the audio player.
         :type audio: numpy array 
         """
-        with self.lock:
-            self.audio = audio
+        if self.stream.channels == audio.shape[1]:
+            with self.lock:
+                self.audio = audio
+        else:
+            downmixed = downmix(audio, self.stream.channels)
+            with self.lock:
+                self.audio = downmixed
 
     def set_volume(self, gain: float) -> None:
         """
@@ -242,3 +247,72 @@ class AudioPlayer():
         """
         with self.lock:
             return self.finished
+
+def downmix(audio, out_channels):
+    """
+    Downmixes audio from multiple channels (up to 10) to desired number of channels.
+
+    :param audio: (samples, in_channels)
+    :param out_channels: desired number of output channels
+    """
+    assert out_channels <= audio.shape[1]
+    assert audio.shape[1] <= 10
+
+    in_channels = audio.shape[1]
+    mix_matrix = make_mix_matrix(in_channels, out_channels)
+    mixed = np.dot(audio, mix_matrix)
+    #mixed = audio @ mix_matrix
+
+    # normalization
+    # peak = np.max(np.abs(mixed))
+    # if peak > 1.0:
+    #     mixed /= peak
+
+    return mixed
+
+
+def get_role_gains(role, out_channels):
+    """
+    Returns list of (out_idx, gain) for a given input role.
+    Used for downmixing audio of many channels.
+
+    :param role: A role from ["L", "R", "C", "Sub", "BL", "BR", "AuxL", "AuxR", "WideL", "WideR"]
+    :param out_channels: Number of output channels
+    """
+
+    center_mix = 0.707
+    surround_min = 0.707
+    other_mix = 0.3
+    R = out_channels - 1  # rightmost output index
+
+    rules = {
+        "L"      : [(0, 1.0)],
+        "R"      : [(min(1, R), 1.0)],
+        "C"      : [(i, center_mix) for i in range(out_channels)],
+        "Sub"    : [(i, other_mix) for i in range(out_channels)],
+        "BL"     : [(0, surround_min)],
+        "BR"     : [(min(1, R), surround_min)],
+        "AuxL"   : [(0, other_mix)],
+        "AuxR"   : [(min(1, R), other_mix)],
+        "WideL"  : [(min(1, R), other_mix)],
+        "WideR"  : [(min(1, R), other_mix)]
+    }
+    return rules.get(role, [(0, 1.0)])
+
+def make_mix_matrix(in_channels, out_channels):
+    """
+    Creates a matrix of shape (in_channels, out_channels) with which audio will be multiplied. Used for downmixing.
+
+    :param in_channels: Number of input channels
+    :param out_channels: Number of output channels
+    """
+
+    channel_roles = ["L", "R", "C", "Sub", "BL", "BR", "AuxL", "AuxR", "WideL", "WideR"]
+    matrix = np.zeros((in_channels, out_channels))
+
+    for i in range(min(in_channels, len(channel_roles))):
+        role = channel_roles[i]
+        for out_idx, gain in get_role_gains(role, out_channels):
+            matrix[i, out_idx] += gain
+
+    return matrix
