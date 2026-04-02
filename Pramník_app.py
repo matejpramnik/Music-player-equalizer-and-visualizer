@@ -700,6 +700,9 @@ class App:
                 if event.type == pg.QUIT:
                     self.running = False
                     self.player.terminate_player()
+                    if self.worker_process is not None and self.worker_process.is_alive():
+                        self.worker_process.terminate()
+                        self.worker_process.join()
                     pg.quit()
                     # remembers the config
                     save_config = {
@@ -1081,7 +1084,7 @@ class App:
 
 
 if __name__ == "__main__":
-    #freeze_support()
+    freeze_support()
     # imports here to prevent importing at every process spawn
     import pygame as pg
     import pygame_gui

@@ -853,6 +853,7 @@ class MusicControlPanel(Panel):
 
             elif "#audio_file_progress_slider" in event.ui_element.object_ids:
                 value = event.value / 100
+                event.ui_element.parent_element._set_line_length()
                 app.set_player_position(value)
 
         elif event.type == pg.MOUSEBUTTONDOWN:
@@ -1092,6 +1093,12 @@ class Slider(pygame_gui.elements.UIPanel):
         :param warn: set to 'False' to suppress the default warning, instead the value will be clamped.
         """
         self.wiper.set_current_value(new_value, warn)
+        self._set_line_length()
+
+    def _set_line_length(self) -> None:
+        """
+        Sets only the progress line length.
+        """
         width = self.get_relative_rect().width * self.get_current_value_percentage()
         self.line_progress.set_dimensions((width, 4))
 
@@ -1132,7 +1139,7 @@ class Slider(pygame_gui.elements.UIPanel):
         )
 
         self.wiper = pygame_gui.elements.UIHorizontalSlider(
-            relative_rect=pg.Rect(0, 0, rect.width, rect.height),
+            relative_rect=pg.Rect(0, 0, rect.width + 2, rect.height),
             start_value=start_value,
             value_range=value_range,
             container=self,

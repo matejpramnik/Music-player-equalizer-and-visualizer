@@ -87,6 +87,7 @@ class AudioPlayer():
                     finished_callback=self._on_finished)
         except:
             sleep(1)
+            # bluetooth connecting issues
             self._stream(rate, blocksize, device)
         
     def play(self) -> None:
@@ -269,7 +270,6 @@ def downmix(audio, out_channels):
     #     mixed /= peak
 
     return mixed
-
 
 def get_role_gains(role, out_channels):
     """
