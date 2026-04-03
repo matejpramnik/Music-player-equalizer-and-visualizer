@@ -128,7 +128,7 @@ class MusicControlPanel(Panel):
             relative_rect=pg.Rect(0, self.surface.get_height() - 80, 60, 60),
             text="",
             manager=self.manager,
-            container=self.panel.get_container(),
+            container=self.panel,
             anchors={"centerx": "centerx"},
             object_id=pygame_gui.core.ObjectID(class_id="@control_buttons",
                                                object_id="#play_button")
@@ -246,7 +246,7 @@ class MusicControlPanel(Panel):
         )
 
         self.queue_panel = pygame_gui.elements.UIScrollingContainer(
-            relative_rect=pg.Rect(65, 20, self.surface.get_width() - 70, self.surface.get_height() - 320),
+            relative_rect=pg.Rect(65, 8, self.surface.get_width() - 70, self.surface.get_height() - 320),
             manager=self.manager,
             allow_scroll_y=True,
             allow_scroll_x=False,
@@ -270,7 +270,7 @@ class MusicControlPanel(Panel):
         )
 
         self.burger_menu_panel = pygame_gui.elements.UIPanel(
-            relative_rect=pg.Rect(0, 0, 390, 480),
+            relative_rect=pg.Rect(0, 0, 390, 420),
             manager=self.manager,
             starting_height=10,
             object_id=pygame_gui.core.ObjectID(class_id="@menu_panels",
@@ -315,17 +315,18 @@ class MusicControlPanel(Panel):
                                                object_id="#eq_choice")
         )
 
-        self.change_vis_btn = pygame_gui.elements.UIButton(
-            relative_rect=pg.Rect(70, self.toggle_eq_panel_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
-            text="Change visualization",
-            manager=self.manager,
-            container=self.burger_menu_panel,
-            object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
-                                               object_id="#change_vis_choice")
-        )
+        #TODO: odstranit z theme json "#change_vis_choice"
+        # self.change_vis_btn = pygame_gui.elements.UIButton(
+        #     relative_rect=pg.Rect(70, self.toggle_eq_panel_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
+        #     text="Change visualization",
+        #     manager=self.manager,
+        #     container=self.burger_menu_panel,
+        #     object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
+        #                                        object_id="#change_vis_choice")
+        # )
 
         self.switch_theme_btn = pygame_gui.elements.UIButton(
-            relative_rect=pg.Rect(70, self.change_vis_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
+            relative_rect=pg.Rect(70, self.toggle_eq_panel_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
             text="Switch theme",
             manager=self.manager,
             container=self.burger_menu_panel,
@@ -657,10 +658,10 @@ class MusicControlPanel(Panel):
         """
         super().handle_event(event, app)
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
-            if event.ui_element == self.change_vis_btn:
-                app.cycle_vis_type()
+            # if event.ui_element == self.change_vis_btn:
+            #     app.cycle_vis_type()
 
-            elif event.ui_element == self.play_stop_btn:
+            if event.ui_element == self.play_stop_btn:
                 app.play_pause()
                 
             elif event.ui_element == self.eq_cross_btn:
@@ -895,6 +896,98 @@ class MusicControlPanel(Panel):
 class VisPanel(Panel):
     def __init__(self, rect, manager):
         super().__init__(rect, manager)
+
+
+class VisControlPanel(Panel):
+    def __init__(self, rect, manager):
+        super().__init__(rect, manager)
+        self.build_ui()
+
+    def build_ui(self):
+        btn_width = 76
+        btn_height = self.surface.get_height() - 16
+        btn_top = 12
+        # based on the number of buttons
+        btn_offset = (self.surface.get_width() - (7 * btn_width)) / 8
+
+        self.basic_vis_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(btn_offset, btn_top, btn_width, btn_height),
+            text="Line",
+            manager=self.manager,
+            container=self.panel,
+            object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
+        )
+
+        self.vis_3d_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(self.basic_vis_btn.get_relative_rect().right + btn_offset, btn_top, btn_width, btn_height),
+            text="3D",
+            manager=self.manager,
+            container=self.panel,
+            object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
+        )
+
+        self.circle_vis_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(self.vis_3d_btn.get_relative_rect().right + btn_offset, btn_top, btn_width, btn_height),
+            text="Circle",
+            manager=self.manager,
+            container=self.panel,
+            object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
+        )
+
+        self.pulse_vis_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(self.circle_vis_btn.get_relative_rect().right + btn_offset, btn_top, btn_width, btn_height),
+            text="Pulse",
+            manager=self.manager,
+            container=self.panel,
+            object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
+        )
+
+        self.peak_vis_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(self.pulse_vis_btn.get_relative_rect().right + btn_offset, btn_top, btn_width, btn_height),
+            text="Peaks",
+            manager=self.manager,
+            container=self.panel,
+            object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
+        )
+
+        self.stereo_vis_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(self.peak_vis_btn.get_relative_rect().right + btn_offset, btn_top, btn_width, btn_height),
+            text="Stereo",
+            manager=self.manager,
+            container=self.panel,
+            object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
+        )
+
+        self.surround_vis_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(self.stereo_vis_btn.get_relative_rect().right + btn_offset, btn_top, btn_width, btn_height),
+            text="Surround",
+            manager=self.manager,
+            container=self.panel,
+            object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
+        )
+
+    def handle_event(self, event: pg.Event, app: App):
+        if event.type == pygame_gui.UI_BUTTON_PRESSED:
+            if event.ui_element == self.basic_vis_btn:
+                app.set_vis_type(1)
+            elif event.ui_element == self.vis_3d_btn:
+                app.set_vis_type(2)
+            elif event.ui_element == self.circle_vis_btn:
+                app.set_vis_type(3)
+            elif event.ui_element == self.pulse_vis_btn:
+                app.set_vis_type(4)
+            elif event.ui_element == self.peak_vis_btn:
+                app.set_vis_type(5)
+            elif event.ui_element == self.stereo_vis_btn:
+                app.set_vis_type(6)
+            elif event.ui_element == self.surround_vis_btn:
+                app.set_vis_type(7)
+
+    def redraw(self, width, height):
+        super().redraw(width, height)
+        self.build_ui()
+
+
 
 
 class SongItem(pygame_gui.elements.UIPanel):

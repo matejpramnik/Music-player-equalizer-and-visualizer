@@ -247,7 +247,7 @@ class State(Enum):
 class App:
     def __init__(self):
         # circular import prevention
-        from classes import MusicControlPanel, VisPanel
+        from classes import MusicControlPanel, VisPanel, VisControlPanel
 
         self.output_device = AudioUtilities.GetSpeakers()
 
@@ -321,7 +321,8 @@ class App:
         # pygame window/display things; splits the display into 2 parts
         self.display = pg.display.set_mode((self.screen_width, self.screen_height))
         controls_rect = pg.Rect(0, 0, self.vis_start, self.screen_height)
-        drawing_rect = pg.Rect(self.vis_start, 0, self.screen_width - self.vis_start, self.screen_height)
+        drawing_rect = pg.Rect(self.vis_start, 55, self.screen_width - self.vis_start, self.screen_height - 55)
+        vis_control_rect = pg.Rect(self.vis_start, 0, self.screen_width - self.vis_start, 55)
 
         # pygame_gui:
         # 1 manager, panels for display split; theme + font
@@ -352,13 +353,14 @@ class App:
             self.repeat_queue
         )
         self.vis_panel = VisPanel(drawing_rect, self.manager)
+        self.vis_control_panel = VisControlPanel(vis_control_rect, self.manager)
 
         # loading animation
         icon_path = "icons/loadingDark" if self.theme == 1 else "icons/loadingLight"
         self.loading_frames = load_frames_folder(icon_path)
 
         # visualization types
-        self.vis_num = 6
+        self.vis_num = 7
         self.fps = 44100 / 512
 
         self.running = True
@@ -369,7 +371,6 @@ class App:
 
     def __visualize(self, rate: int, chunk_size: int, freq_interval: tuple, working_data: list) -> None:
         """
-        Private method, should not be called explicitly.\n
         Creates one frame of "basic"-type visualization, draws it onto a vis_panel surface.
         """
         # 1 visualization row (basic visualization, just 1 frequency domain)
@@ -378,7 +379,8 @@ class App:
         f_min = freq_interval[0]
         f_max = freq_interval[1]
         fps = rate / chunk_size
-        factor = self.vis_panel.rect.width / 261
+        factor = self.vis_panel.surface.get_width() / 261
+        height = self.vis_panel.surface.get_height()
         #freq_bin_color = (252, 252, 252) if self.theme == 0 else (24, 52, 78)
 
         for j,v in enumerate(working_data):
@@ -395,17 +397,16 @@ class App:
 
             color = np.clip((255-j, 1+j, 0), 0, 255)
             x = j * factor + 5
-            y = self.screen_height - (v * vis_gain_multiplier)
-            y = self.screen_height if y >= self.screen_height else 0 if y <= 0 else y
+            y = height - (v * vis_gain_multiplier)
+            y = height if y >= height else 0 if y <= 0 else y
             x, y = int(round(x)), int(round(y))
 
-            pg.draw.line(self.vis_panel.surface, color, (x, self.screen_height - 15), (x, y - 15), width = 2)
+            pg.draw.line(self.vis_panel.surface, color, (x, height - 15), (x, y - 15), width = 2)
             counter += 1
 
 
     def __visualize_3d(self, rate: int, chunk: int, freq_interval: tuple, data: list, position: int, vis_num: int, scale_value: float)-> None:
         """
-        Private method, should not be called explicitly.\n
         Creates one frame of "3D"-type visualization, draws it onto a vis_panel surface.
         """
 
@@ -425,7 +426,7 @@ class App:
             a = min(255, 255 // iter + 40)
             color = (r, g, b, a)
 
-            current_iter_y = self.screen_height - (35 * iter)
+            current_iter_y = self.vis_panel.surface.get_height() - (35 * iter)
 
             for j,v in enumerate(working_data):
                 
@@ -449,7 +450,6 @@ class App:
 
     def __visualize_circle(self, rate: int, chunk: int, freq_interval: tuple, working_data: list, pos: int) -> None:
         """
-        Private method, should not be called explicitly.\n
         Creates one frame of "circle" type visualization, draws it onto a vis_panel surface.
         """
 
@@ -496,7 +496,6 @@ class App:
 
     def __visualize_circle_peaks(self, rate: int, chunk: int, freq_interval: tuple, working_data: list, pos: int) -> None:
         """
-        Private method, should not be called explicitly.\n
         Creates one frame of "circle" type visualization, draws it onto a vis_panel surface.
         """
 
@@ -549,19 +548,18 @@ class App:
             counter += 1
 
 
-    def __visualize_circle_stereo(self, rate: int, chunk: int, freq_interval: tuple, working_data_left: list, working_data_right: list, pos: int) -> None:
+    def __visualize_circle_n_channels(self, rate: int, chunk: int, freq_interval: tuple, channels_data: tuple, pos: int, channels: int) -> None:
         """
-        Private method, should not be called explicitly.\n
-        Creates one frame of "circle" type visualization, draws it onto a vis_panel surface.
+        Creates one frame of "circle" composed of connected peaks, draws it onto a vis_panel surface.
         """
 
-        def draw_one_channel(channel_data: list, mid_x, mid_y):
+        def draw_one_channel(channel_data: list, mid_x, mid_y, size_specifier=35):
             counter = 0
             f_min = freq_interval[0]
             f_max = freq_interval[1]
             fps = rate / chunk
 
-            lines_num = 258
+            lines_num = 129
             angles_rad = np.linspace(0, 2*np.pi, lines_num, endpoint=False)
             sin_table = np.sin(angles_rad)
             cos_table = np.cos(angles_rad)
@@ -571,7 +569,9 @@ class App:
             prev_x, prev_y = x_start, y_start
             last_x, last_y = 0, 0
 
-            for j,v in enumerate(channel_data):
+            length = len(channel_data)
+            channel_data_filtered = channel_data[0:length:2]
+            for j,v in enumerate(channel_data_filtered):
                 
                 vis_gain = 0
                 f = j * fps
@@ -585,32 +585,39 @@ class App:
 
                 color = np.clip((30, 255 - j, 1 + j), 0, 255)
                 
-                line_length = (v * vis_gain_multiplier)
+                line_length = (v * vis_gain_multiplier)# - (2 * size_specifier)
                 line_length = 0 if line_length < 0 else line_length
                 index = (counter + (pos // 4)) % len(sin_table)
 
-                x_s = x_start + 35 * sin_table[index]
-                y_s = y_start + 35 * cos_table[index]
+                x_s = x_start + size_specifier * sin_table[index]
+                y_s = y_start + size_specifier * cos_table[index]
                 x = line_length * sin_table[index]
                 y = line_length * cos_table[index]
                 e_x, e_y = int(round(x_s + x)), int(round(y_s + y))
                 if j == 1:
                     prev_x, prev_y = e_x, e_y
                     last_x, last_y = e_x, e_y
-                if j == 256:
+                if j == lines_num - 1:
                     e_x, e_y = last_x, last_y
                 
                 pg.draw.line(self.vis_panel.surface, color, (prev_x, prev_y), (e_x, e_y), width = 3)
                 prev_x, prev_y = e_x, e_y
                 counter += 1
         
-        draw_one_channel(working_data_left, self.vis_panel.surface.get_width() // 4, self.vis_panel.surface.get_height() // 2)
-        draw_one_channel(working_data_right, self.vis_panel.surface.get_width() // 4 * 3, self.vis_panel.surface.get_height() // 2)
+        if channels == 2:
+            draw_one_channel(channels_data[0], self.vis_panel.surface.get_width() // 4, self.vis_panel.surface.get_height() // 2)
+            draw_one_channel(channels_data[1], self.vis_panel.surface.get_width() // 4 * 3, self.vis_panel.surface.get_height() // 2)
+        elif channels == 6: # ["L", "R", "C", "Sub", "BL", "BR"]
+            draw_one_channel(channels_data[0], self.vis_panel.surface.get_width() // 4, self.vis_panel.surface.get_height() // 4)
+            draw_one_channel(channels_data[1], self.vis_panel.surface.get_width() // 4 * 3, self.vis_panel.surface.get_height() // 4)
+            draw_one_channel(channels_data[2], self.vis_panel.surface.get_width() // 2, self.vis_panel.surface.get_height() // 4, 15)
+            draw_one_channel(channels_data[3], self.vis_panel.surface.get_width() // 5 * 3, self.vis_panel.surface.get_height() // 2, 10)
+            draw_one_channel(channels_data[4], self.vis_panel.surface.get_width() // 4, self.vis_panel.surface.get_height() // 4 * 3, 15)
+            draw_one_channel(channels_data[5], self.vis_panel.surface.get_width() // 4 * 3, self.vis_panel.surface.get_height() // 4 * 3, 15)
 
 
     def __visualize_circle_3d(self, rate: int, chunk: int, freq_interval: tuple, data: list, position: int, scale_value: float) -> None:
         """
-        Private method, should not be called explicitly.\n
         Creates one frame of "3D circle" type visualization, draws it onto a vis_panel surface.
         """
 
@@ -726,6 +733,7 @@ class App:
                     event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED or \
                     event.type == pg.MOUSEBUTTONDOWN:
                     self.control_panel.handle_event(event, self)
+                    self.vis_control_panel.handle_event(event, self)
                 if event.type == pg.MOUSEWHEEL:
                     if self.control_panel.queue_panel.hover_point(*pg.mouse.get_pos()):
                         self.control_panel.handle_scrolling(event)
@@ -793,7 +801,7 @@ class App:
                 working_data = processed_vis_data[i]
                 working_data_divided = [channel[i] for channel in processed_vis_data_divided]
                 if self.processed_vis_data_max_val > 0.0:
-                    scale_value = self.screen_height / self.processed_vis_data_max_val
+                    scale_value = self.vis_panel.surface.get_height() / self.processed_vis_data_max_val
                     working_data = working_data * scale_value * 1.5
                     working_data_divided = [channel * (scale_value / 2) for channel in working_data_divided]
 
@@ -819,9 +827,26 @@ class App:
                 elif self.vis_type == 5:
                     self.__visualize_circle_peaks(rate, chunk, freq_interval, working_data, i)
 
-                # circle stereo
+                # peaks stereo
                 elif self.vis_type == 6:
-                    self.__visualize_circle_stereo(rate, chunk, freq_interval, working_data_divided[0], working_data_divided[1], i)
+                    if len(working_data_divided) == 1:
+                        # if the sound is mono, display the mono twice
+                        self.__visualize_circle_n_channels(rate, chunk, freq_interval, (working_data, working_data), i, 2)
+                    self.__visualize_circle_n_channels(rate, chunk, freq_interval, (working_data_divided[0], working_data_divided[1]), i, 2)
+
+                # peaks surround (6 ch)
+                elif self.vis_type == 7:
+                    if len(working_data_divided) < 6:
+                        # fill missing channels with zeros
+                        for __ in range(6 - len(working_data_divided)):
+                            working_data_divided.append([0] * len(working_data_divided[0]))
+                    self.__visualize_circle_n_channels(rate, chunk, freq_interval,
+                                                       (working_data_divided[0],
+                                                        working_data_divided[1],
+                                                        working_data_divided[2],
+                                                        working_data_divided[3],
+                                                        working_data_divided[4],
+                                                        working_data_divided[5]), 180, 6)
 
                 ############################################################################################
 
@@ -906,11 +931,20 @@ class App:
         self.volume = value
         self.player.set_volume(value)
 
-    def cycle_vis_type(self) -> None:
+    # def cycle_vis_type(self) -> None:
+    #     """
+    #     Cycles between visualization types.
+    #     """
+    #     self.vis_type = self.vis_type % self.vis_num + 1
+
+    def set_vis_type(self, type: int) -> None:
         """
-        Cycles between visualization types.
+        Sets currently displayed visualization type.
+
+        :param type: Number of the desired type
+        :type type: integer
         """
-        self.vis_type = self.vis_type % self.vis_num + 1
+        self.vis_type = type
 
     def continue_in_queue(self, clicked_back=False, clicked_next=False) -> None:
         """
@@ -1076,7 +1110,8 @@ class App:
         self.manager.clear_and_reset()
         self.manager.set_window_resolution((self.screen_width, self.screen_height))
         self.control_panel.redraw(self.vis_start, self.screen_height, self.original_queue.copy())
-        self.vis_panel.redraw(self.screen_width - self.vis_start, self.screen_height)
+        self.vis_panel.redraw(self.screen_width - self.vis_start, self.screen_height - 55)
+        self.vis_control_panel.redraw(self.screen_width - self.vis_start, 55)
         # queue sync
         self.control_panel.queue = self.queue.copy()
         self.control_panel.mark_played()
