@@ -8,7 +8,7 @@ from Pramník_app import State, App
 
 class Panel():
     def __init__(self, rect: pg.Rect, manager: pygame_gui.UIManager):
-        self.supported_extensions = [".wav", ".mp3", ".mp2", ".flac", ".ogg", ".aac", ".m4a", ".3gp", ".aiff", ".wv"]
+        self.supported_extensions = [".wav", ".mp3", ".mp2", ".flac", ".ogg", ".m4a", ".aiff", ".wma"]
         self.rect = rect
         self.surface = pg.Surface((self.rect.width, self.rect.height), pg.SRCALPHA)
         self.manager = manager

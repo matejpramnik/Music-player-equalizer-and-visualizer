@@ -264,6 +264,15 @@ class App:
         # the route may not exist (SAN/NAS, network drive)
         self.queue = config_data["queue"] if config_data != None else []
         self.original_queue = config_data["original_queue"] if config_data != None else self.queue.copy()
+        queue1 = []
+        queue2 = []
+        for i in range(len(self.queue) - 1):
+            if os.path.exists(self.queue[i]):
+                queue1.append(self.queue[i])
+            if os.path.exists(self.original_queue[i]):
+                queue2.append(self.queue[i])
+        self.queue = queue1.copy()
+        self.original_queue = queue2.copy()
 
         freqs_gain_values = config_data["freqs_gain_values"] if config_data != None else [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.freqs = {25: freqs_gain_values[0], 50: freqs_gain_values[1],
@@ -743,9 +752,9 @@ class App:
 
             # erases the previous iteration of vis + clock tick
             self.vis_panel.surface.fill((232, 241, 242) if self.theme == 1 else (10,12,16))
-            self.manager.draw_ui(self.display)
             dt = self.clock.tick(self.fps)
             self.control_panel.update_ui(self.state, self.player.get_position_s(), self.player.get_song_length_s())
+            self.manager.draw_ui(self.display)
 
             if self.state == State.DATA_LOADING and not self.process_retval.empty():
                 # data is loaded, worker process has finished
@@ -760,7 +769,7 @@ class App:
 
 
             elif self.state == State.INITIAL:
-                do_nothing = True
+                placeholder = True
 
 
             elif self.state == State.DATA_LOADING:
@@ -854,6 +863,7 @@ class App:
             # blit and flip (order of operations must be preserved)
             self.display.blit(self.vis_panel.surface, self.vis_panel.rect.topleft)
             self.display.blit(self.control_panel.surface, self.control_panel.rect.topleft)
+            self.display.blit(self.vis_control_panel.surface, self.vis_control_panel.rect.topleft)
             pg.display.flip()
             
     
