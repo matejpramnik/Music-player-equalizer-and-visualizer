@@ -256,7 +256,6 @@ def downmix(audio, out_channels):
     :param audio: (samples, in_channels)
     :param out_channels: desired number of output channels
     """
-    assert out_channels <= audio.shape[1]
     assert audio.shape[1] <= 10
 
     in_channels = audio.shape[1]
