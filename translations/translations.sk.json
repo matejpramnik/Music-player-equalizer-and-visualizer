@@ -1,0 +1,32 @@
+{
+    "sk": {
+        "open_dir_btn": "Otvoriť priečinok",
+        "add_dir_btn": "Pridať priečinok",
+        "open_file_btn": "Otvoriť súbory",
+        "toggle_eq_panel_btn": "Ekvalizér",
+        "switch_theme_btn": "Zmeniť režim",
+        "window_size_menu_btn": "Veľkosť okna",
+        
+        "small_window_btn": "Malé",
+        "medium_window_btn": "Stredné",
+        "large_window_btn": "Veľké",
+
+        "language_btn": "Jazyk",
+
+        "english_btn": "Anglický",
+        "slovak_btn": "Slovenský",
+
+
+        "flat_preset_btn": "Plochý",
+        "v_shape_preset_btn": "V-tvar",
+        "clarity_preset_btn": "Čistý",
+        "bass_preset_btn": "Basy",
+        "vocal_preset_btn": "Vokály",
+
+
+        "basic_vis_btn": "Riadok",
+        "circle_vis_btn": "Kruh",
+        "pulse_vis_btn": "Pulz",
+        "peak_vis_btn": "Výšky"
+    }
+}

@@ -402,7 +402,7 @@
         }
     },
 
-    "#window_size_menu_panel": {
+    "#submenu_panel": {
         "misc": {
             "shape_corner_radius": "0, 10, 10, 10"
         }
@@ -709,6 +709,57 @@
             },
             "selected_image": {
                 "path": "icons/large.png",
+                "position": [0.05, 0.5]
+            }
+        }
+    },
+
+    "#language_choice": {
+        "images": {
+            "normal_image": {
+                "path": "icons/language.png",
+                "position": [0.05, 0.5]
+            },
+            "hovered_image": {
+                "path": "icons/languageBig.png",
+                "position": [0.05, 0.5]
+            },
+            "selected_image": {
+                "path": "icons/language.png",
+                "position": [0.05, 0.5]
+            }
+        }
+    },
+
+    "#english_choice": {
+        "images": {
+            "normal_image": {
+                "path": "icons/english.png",
+                "position": [0.05, 0.5]
+            },
+            "hovered_image": {
+                "path": "icons/englishBig.png",
+                "position": [0.05, 0.5]
+            },
+            "selected_image": {
+                "path": "icons/english.png",
+                "position": [0.05, 0.5]
+            }
+        }
+    },
+
+    "#slovak_choice": {
+        "images": {
+            "normal_image": {
+                "path": "icons/slovak.png",
+                "position": [0.05, 0.5]
+            },
+            "hovered_image": {
+                "path": "icons/slovakBig.png",
+                "position": [0.05, 0.5]
+            },
+            "selected_image": {
+                "path": "icons/slovak.png",
                 "position": [0.05, 0.5]
             }
         }

@@ -286,6 +286,7 @@ class App:
         self.repeat_queue = config_data["repeat_queue"] if config_data != None else False
         self.volume = config_data["volume"] if config_data != None else 0.5
         self.vis_type = config_data["vis_type"] if config_data != None else 1
+        self.language = config_data["language"] if config_data != None else "en"
 
         self.currently_played_queue_index = 0
         self.vis_start = 650
@@ -336,7 +337,10 @@ class App:
         # pygame_gui:
         # 1 manager, panels for display split; theme + font
         theme = "theme.json" if self.theme == 0 else "light_theme.json"
-        self.manager = pygame_gui.UIManager((self.screen_width, self.screen_height), enable_live_theme_updates=True)
+        self.manager = pygame_gui.UIManager((self.screen_width, self.screen_height),
+                                            enable_live_theme_updates=True,
+                                            starting_language=self.language,
+                                            translation_directory_paths=["translations"])
         self.manager.add_font_paths(
             font_name="Inter",
             regular_path="font/Inter-VariableFont_opsz,wght.ttf"
@@ -732,7 +736,8 @@ class App:
                         "repeat_one": self.repeat_one,
                         "repeat_queue": self.repeat_queue,
                         "volume": self.volume,
-                        "vis_type": self.vis_type
+                        "vis_type": self.vis_type,
+                        "language": self.language
                     }
                     with open("config.json", "w") as f:
                         json.dump(save_config, f)
@@ -1103,6 +1108,17 @@ class App:
         self.manager.rebuild_all_from_changed_theme_data()
         icon_path = "icons/loadingDark" if self.theme == 1 else "icons/loadingLight"
         self.loading_frames = load_frames_folder(icon_path)
+
+    def switch_language(self, language: str) -> None:
+        """
+        Changes language of the application.
+        Rebuilds the UI.
+
+        :param language: A two letter ISO 639-1 code for a supported language.
+        :type language: string
+        """
+        self.language = language
+        self.manager.set_locale(language)
 
     def change_window_size(self, width: int, height: int) -> None:
         """

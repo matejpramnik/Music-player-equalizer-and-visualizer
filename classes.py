@@ -100,7 +100,6 @@ class MusicControlPanel(Panel):
         # config:
         self.queue = orig_queue
         self.freqs = freqs
-        self.theme = theme # 0=dark, 1=light
         self.shuffle = shuffle
         self.repeat_one = repeat_one
         self.repeat_queue = repeat_queue
@@ -270,7 +269,7 @@ class MusicControlPanel(Panel):
         )
 
         self.burger_menu_panel = pygame_gui.elements.UIPanel(
-            relative_rect=pg.Rect(0, 0, 390, 420),
+            relative_rect=pg.Rect(0, 0, 390, 480),
             manager=self.manager,
             starting_height=10,
             object_id=pygame_gui.core.ObjectID(class_id="@menu_panels",
@@ -281,7 +280,7 @@ class MusicControlPanel(Panel):
 
         self.open_dir_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(70, 12, self.burger_menu_panel.rect.width - 80, 60),
-            text="Open directory",
+            text="translations.open_dir_btn",
             manager=self.manager,
             container=self.burger_menu_panel,
             object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
@@ -290,7 +289,7 @@ class MusicControlPanel(Panel):
 
         self.add_dir_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(70, self.open_dir_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
-            text="Add directory to queue",
+            text="translations.add_dir_btn",
             manager=self.manager,
             container=self.burger_menu_panel,
             object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
@@ -299,7 +298,7 @@ class MusicControlPanel(Panel):
 
         self.open_file_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(70, self.add_dir_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
-            text="Add files to queue",
+            text="translations.open_file_btn",
             manager=self.manager, 
             container=self.burger_menu_panel,
             object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
@@ -308,7 +307,7 @@ class MusicControlPanel(Panel):
 
         self.toggle_eq_panel_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(70, self.open_file_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
-            text="Equalizer",
+            text="translations.toggle_eq_panel_btn",
             manager=self.manager,
             container=self.burger_menu_panel,
             object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
@@ -327,19 +326,19 @@ class MusicControlPanel(Panel):
 
         self.switch_theme_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(70, self.toggle_eq_panel_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
-            text="Switch theme",
+            text="translations.switch_theme_btn",
             manager=self.manager,
             container=self.burger_menu_panel,
             object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
                                                object_id="#switch_theme_choice")
         )
 
-    # window size menu
+        # window size menu
         self.window_size_menu_btn = pygame_gui.elements.UIButton(
             object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
                                                object_id="#window_size_menu_choice"),
             relative_rect=pg.Rect(70, self.switch_theme_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
-            text="Window size",
+            text="translations.window_size_menu_btn",
             manager=self.manager,
             container=self.burger_menu_panel
         )
@@ -349,14 +348,14 @@ class MusicControlPanel(Panel):
             manager=self.manager,
             starting_height=10,
             object_id=pygame_gui.core.ObjectID(class_id="@menu_panels",
-                                               object_id="#window_size_menu_panel"),
+                                               object_id="#submenu_panel"),
             container=self.panel
         )
         self.window_size_menu_panel.hide()
 
         self.small_window_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(10, 12, self.window_size_menu_panel.rect.width - 25, 50),
-            text="Small",
+            text="translations.small_window_btn",
             manager=self.manager,
             container=self.window_size_menu_panel,
             object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
@@ -368,7 +367,7 @@ class MusicControlPanel(Panel):
                                   self.small_window_btn.get_relative_rect().bottom + 5,
                                   self.window_size_menu_panel.rect.width - 25,
                                   50),
-            text="Medium",
+            text="translations.medium_window_btn",
             manager=self.manager,
             container=self.window_size_menu_panel,
             object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
@@ -380,11 +379,52 @@ class MusicControlPanel(Panel):
                                   self.medium_window_btn.get_relative_rect().bottom + 5,
                                   self.window_size_menu_panel.rect.width - 25,
                                   50),
-            text="Large",
+            text="translations.large_window_btn",
             manager=self.manager,
             container=self.window_size_menu_panel,
             object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
                                                object_id="#large_win_choice")
+        )
+
+
+        self.language_btn = pygame_gui.elements.UIButton(
+            object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
+                                               object_id="#language_choice"),
+            relative_rect=pg.Rect(70, self.window_size_menu_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
+            text="translations.language_btn",
+            manager=self.manager,
+            container=self.burger_menu_panel
+        )
+
+        self.language_menu_panel = pygame_gui.elements.UIPanel(
+            relative_rect=pg.Rect(self.burger_menu_panel.rect.right, self.language_btn.rect.top, 200, 130),
+            manager=self.manager,
+            starting_height=10,
+            object_id=pygame_gui.core.ObjectID(class_id="@menu_panels",
+                                               object_id="#submenu_panel"),
+            container=self.panel
+        )
+        self.language_menu_panel.hide()
+
+        self.english_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(10, 12, self.language_menu_panel.rect.width - 25, 50),
+            text="translations.english_btn",
+            manager=self.manager,
+            container=self.language_menu_panel,
+            object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
+                                               object_id="#english_choice")
+        )
+
+        self.slovak_btn = pygame_gui.elements.UIButton(
+            relative_rect=pg.Rect(10,
+                                  self.english_btn.get_relative_rect().bottom + 5,
+                                  self.language_menu_panel.rect.width - 25,
+                                  50),
+            text="translations.slovak_btn",
+            manager=self.manager,
+            container=self.language_menu_panel,
+            object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
+                                               object_id="#slovak_choice")
         )
 #################################################################################
 
@@ -412,7 +452,7 @@ class MusicControlPanel(Panel):
 
         self.flat_preset_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(0, 115, 75, 40),
-            text="Flat",
+            text="translations.flat_preset_btn",
             manager=self.manager,
             container=self.eq_panel,
             starting_height=2,
@@ -421,7 +461,7 @@ class MusicControlPanel(Panel):
 
         self.v_shape_preset_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(0, self.flat_preset_btn.rect.bottom + 20, 75, 40),
-            text="V-shape",
+            text="translations.v_shape_preset_btn",
             manager=self.manager,
             container=self.eq_panel,
             starting_height=2,
@@ -430,7 +470,7 @@ class MusicControlPanel(Panel):
 
         self.clarity_preset_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(0, self.v_shape_preset_btn.rect.bottom + 20, 75, 40),
-            text="Clarity",
+            text="translations.clarity_preset_btn",
             manager=self.manager,
             container=self.eq_panel,
             starting_height=2,
@@ -439,7 +479,7 @@ class MusicControlPanel(Panel):
 
         self.bass_preset_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(0, self.clarity_preset_btn.rect.bottom + 20, 75, 40),
-            text="Bass",
+            text="translations.bass_preset_btn",
             manager=self.manager,
             container=self.eq_panel,
             starting_height=2,
@@ -448,7 +488,7 @@ class MusicControlPanel(Panel):
 
         self.vocal_preset_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(0, self.bass_preset_btn.rect.bottom + 20, 75, 40),
-            text="Vocals",
+            text="translations.vocal_preset_btn",
             manager=self.manager,
             container=self.eq_panel,
             starting_height=2,
@@ -733,7 +773,15 @@ class MusicControlPanel(Panel):
                 if self.window_size_menu_panel.visible:
                     self.window_size_menu_panel.hide()
                 else:
+                    self.language_menu_panel.hide()
                     self.window_size_menu_panel.show()
+
+            elif event.ui_element == self.language_btn:
+                if self.language_menu_panel.visible:
+                    self.language_menu_panel.hide()
+                else:
+                    self.window_size_menu_panel.hide()
+                    self.language_menu_panel.show()
 
             elif event.ui_element == self.open_dir_btn:
                 # blocks ui, laggy when the directory is large; pygame_gui is not thread-safe
@@ -773,9 +821,18 @@ class MusicControlPanel(Panel):
                     self.eq_panel.show()
 
             elif event.ui_element == self.switch_theme_btn:
-                self.theme = 1 - self.theme
                 self.burger_menu_panel.hide()
                 app.switch_theme()
+
+            elif event.ui_element == self.english_btn:
+                self.burger_menu_panel.hide()
+                self.language_menu_panel.hide()
+                app.switch_language("en")
+
+            elif event.ui_element == self.slovak_btn:
+                self.burger_menu_panel.hide()
+                self.language_menu_panel.hide()
+                app.switch_language("sk")
 
             elif event.ui_element == self.small_window_btn:
                 app.change_window_size(1300, 790)
@@ -859,15 +916,19 @@ class MusicControlPanel(Panel):
 
         elif event.type == pg.MOUSEBUTTONDOWN:
             window_panel_opened = self.window_size_menu_panel.visible
+            language_panel_opened = self.language_menu_panel.visible
             burger_menu_opened = self.burger_menu_panel.visible
 
-            if not window_panel_opened:
+            if not window_panel_opened and not language_panel_opened:
                 if burger_menu_opened and not self.burger_menu_panel.rect.collidepoint(event.pos):
                     self.burger_menu_panel.hide()
             else:
-                if not self.burger_menu_panel.rect.collidepoint(event.pos) and not self.window_size_menu_panel.rect.collidepoint(event.pos):
-                    self.burger_menu_panel.hide()
-                    self.window_size_menu_panel.hide()
+                if not self.burger_menu_panel.rect.collidepoint(event.pos) \
+                    and not self.window_size_menu_panel.rect.collidepoint(event.pos) \
+                    and not self.language_menu_panel.rect.collidepoint(event.pos):
+                        self.language_menu_panel.hide()
+                        self.window_size_menu_panel.hide()
+                        self.burger_menu_panel.hide()
 
     def handle_scrolling(self, event: pg.Event) -> None:
         """
@@ -912,7 +973,7 @@ class VisControlPanel(Panel):
 
         self.basic_vis_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(btn_offset, btn_top, btn_width, btn_height),
-            text="Line",
+            text="translations.basic_vis_btn",
             manager=self.manager,
             container=self.panel,
             object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
@@ -928,7 +989,7 @@ class VisControlPanel(Panel):
 
         self.circle_vis_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(self.vis_3d_btn.get_relative_rect().right + btn_offset, btn_top, btn_width, btn_height),
-            text="Circle",
+            text="translations.circle_vis_btn",
             manager=self.manager,
             container=self.panel,
             object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
@@ -936,7 +997,7 @@ class VisControlPanel(Panel):
 
         self.pulse_vis_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(self.circle_vis_btn.get_relative_rect().right + btn_offset, btn_top, btn_width, btn_height),
-            text="Pulse",
+            text="translations.pulse_vis_btn",
             manager=self.manager,
             container=self.panel,
             object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")
@@ -944,7 +1005,7 @@ class VisControlPanel(Panel):
 
         self.peak_vis_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(self.pulse_vis_btn.get_relative_rect().right + btn_offset, btn_top, btn_width, btn_height),
-            text="Peaks",
+            text="translations.peak_vis_btn",
             manager=self.manager,
             container=self.panel,
             object_id=pygame_gui.core.ObjectID(class_id="@text_buttons")

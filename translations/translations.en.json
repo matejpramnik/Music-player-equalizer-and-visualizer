@@ -1,0 +1,32 @@
+{
+    "en": {
+        "open_dir_btn": "Open directory",
+        "add_dir_btn": "Add directory to queue",
+        "open_file_btn": "Add files to queue",
+        "toggle_eq_panel_btn": "Equalizer",
+        "switch_theme_btn": "Switch theme",
+        "window_size_menu_btn": "Window size",
+
+        "small_window_btn": "Small",
+        "medium_window_btn": "Medium",
+        "large_window_btn": "Large",
+
+        "language_btn": "Language",
+
+        "english_btn": "English",
+        "slovak_btn": "Slovak",
+
+
+        "flat_preset_btn": "Flat",
+        "v_shape_preset_btn": "V-shape",
+        "clarity_preset_btn": "Clarity",
+        "bass_preset_btn": "Bass",
+        "vocal_preset_btn": "Vocals",
+
+        
+        "basic_vis_btn": "Line",
+        "circle_vis_btn": "Circle",
+        "pulse_vis_btn": "Pulse",
+        "peak_vis_btn": "Peaks"
+    }
+}
