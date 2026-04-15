@@ -58,7 +58,7 @@ class Panel():
         Opens a file explorer and lets the user choose a file. Returns an absolute path to it.
         """
         path = easygui.fileopenbox("Choose an audio file to add to your queue",
-                                   filetypes=[["*.wav", "*.mp3", "*.flac", "*.ogg", "*.aac", "*.3gp", "*.webm", "Audio files"]],
+                                   filetypes=[["*.wav", "*.mp3", "*.mp2", "*.flac", "*.ogg", "*.m4a", "*.aiff", "*.wma", "Audio files"]],
                                    multiple=True,
                                    default="*.wav")
         if path == None: return []
@@ -92,7 +92,6 @@ class MusicControlPanel(Panel):
                  freqs: dict,
                  orig_queue: list,
                  volume: float,
-                 theme: int,
                  shuffle: bool,
                  repeat_one: bool,
                  repeat_queue: bool):
@@ -314,16 +313,6 @@ class MusicControlPanel(Panel):
                                                object_id="#eq_choice")
         )
 
-        #TODO: odstranit z theme json "#change_vis_choice"
-        # self.change_vis_btn = pygame_gui.elements.UIButton(
-        #     relative_rect=pg.Rect(70, self.toggle_eq_panel_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
-        #     text="Change visualization",
-        #     manager=self.manager,
-        #     container=self.burger_menu_panel,
-        #     object_id=pygame_gui.core.ObjectID(class_id="@menu_choice_buttons",
-        #                                        object_id="#change_vis_choice")
-        # )
-
         self.switch_theme_btn = pygame_gui.elements.UIButton(
             relative_rect=pg.Rect(70, self.toggle_eq_panel_btn.rect.bottom, self.burger_menu_panel.rect.width - 80, 60),
             text="translations.switch_theme_btn",
@@ -496,7 +485,6 @@ class MusicControlPanel(Panel):
         )
 
         self.eq_sliders = []
-        # vert: 52px width na jeden
         y = 5
         for freq, gain in self.freqs.items():
             slider_panel = EqualizerSliderPanel(
@@ -698,8 +686,6 @@ class MusicControlPanel(Panel):
         """
         super().handle_event(event, app)
         if event.type == pygame_gui.UI_BUTTON_PRESSED:
-            # if event.ui_element == self.change_vis_btn:
-            #     app.cycle_vis_type()
 
             if event.ui_element == self.play_stop_btn:
                 app.play_pause()
@@ -934,7 +920,7 @@ class MusicControlPanel(Panel):
         """
         Handles the queue panel scrolling. Gets rid of the UIScrollingContainer's deceleration after scrolling.
 
-        :param event: Pygame Event
+        :param event: Pygame scrolling Event
         """
         # scroll position (pixels)
         current_y = -self.queue_panel.scrollable_container.relative_rect.y

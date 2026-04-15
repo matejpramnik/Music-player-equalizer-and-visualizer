@@ -621,23 +621,6 @@
         }
     },
 
-    "#change_vis_choice": {
-        "images": {
-            "normal_image": {
-                "path": "icons/darkChart.png",
-                "position": [0.05, 0.5]
-            },
-            "hovered_image": {
-                "path": "icons/darkChartBig.png",
-                "position": [0.05, 0.5]
-            },
-            "selected_image": {
-                "path": "icons/darkChart.png",
-                "position": [0.05, 0.5]
-            }
-        }
-    },
-
     "#switch_theme_choice": {
         "images": {
             "normal_image": {

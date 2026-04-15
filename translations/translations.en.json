@@ -27,6 +27,9 @@
         "basic_vis_btn": "Line",
         "circle_vis_btn": "Circle",
         "pulse_vis_btn": "Pulse",
-        "peak_vis_btn": "Peaks"
+        "peak_vis_btn": "Peaks",
+
+
+        "missing_files": "Missing files"
     }
 }

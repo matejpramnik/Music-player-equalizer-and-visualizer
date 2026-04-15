@@ -249,6 +249,8 @@ class AudioPlayer():
         with self.lock:
             return self.finished
 
+
+
 def downmix(audio, out_channels):
     """
     Downmixes audio from multiple channels (up to 10) to desired number of channels.
@@ -261,12 +263,6 @@ def downmix(audio, out_channels):
     in_channels = audio.shape[1]
     mix_matrix = make_mix_matrix(in_channels, out_channels)
     mixed = np.dot(audio, mix_matrix)
-    #mixed = audio @ mix_matrix
-
-    # normalization
-    # peak = np.max(np.abs(mixed))
-    # if peak > 1.0:
-    #     mixed /= peak
 
     return mixed
 

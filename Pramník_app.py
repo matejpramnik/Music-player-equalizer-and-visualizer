@@ -264,11 +264,17 @@ class App:
         # the route may not exist (SAN/NAS, network drive)
         self.queue = config_data["queue"] if config_data != None else []
         self.original_queue = config_data["original_queue"] if config_data != None else self.queue.copy()
+
         queue1 = []
         queue2 = []
-        for i in range(len(self.queue) - 1):
+        self.missing_files = []
+        self.missing_flag = False   # at least one of the files from the queue is missing
+        for i in range(len(self.queue)):
             if os.path.exists(self.queue[i]):
                 queue1.append(self.queue[i])
+            else:
+                self.missing_flag = True
+                self.missing_files.append(self.queue[i])
             if os.path.exists(self.original_queue[i]):
                 queue2.append(self.queue[i])
         self.queue = queue1.copy()
@@ -360,7 +366,6 @@ class App:
             self.freqs,
             self.original_queue,
             self.volume,
-            self.theme,
             self.shuffle,
             self.repeat_one,
             self.repeat_queue
@@ -394,7 +399,6 @@ class App:
         fps = rate / chunk_size
         factor = self.vis_panel.surface.get_width() / 261
         height = self.vis_panel.surface.get_height()
-        #freq_bin_color = (252, 252, 252) if self.theme == 0 else (24, 52, 78)
 
         for j,v in enumerate(working_data):
             vis_gain = 0
@@ -507,66 +511,12 @@ class App:
             counter += 1
 
 
-    def __visualize_circle_peaks(self, rate: int, chunk: int, freq_interval: tuple, working_data: list, pos: int) -> None:
-        """
-        Creates one frame of "circle" type visualization, draws it onto a vis_panel surface.
-        """
-
-        counter = 0
-        f_min = freq_interval[0]
-        f_max = freq_interval[1]
-        fps = rate / chunk
-
-        lines_num = 258
-        angles_rad = np.linspace(0, 2*np.pi, lines_num, endpoint=False)
-        sin_table = np.sin(angles_rad)
-        cos_table = np.cos(angles_rad)
-
-        x_start = self.vis_panel.surface.get_width() // 2
-        y_start = self.vis_panel.surface.get_height() // 2
-        prev_x, prev_y = x_start, y_start
-        last_x, last_y = 0, 0
-
-        for j,v in enumerate(working_data):
-            
-            vis_gain = 0
-            f = j * fps
-            if f < f_min or f > f_max:
-                counter += 1
-                continue
-
-            # eq taken into account:
-            vis_gain = self.vis_gains[j]
-            vis_gain_multiplier = 10 ** (vis_gain / 20)
-
-            color = np.clip((1 + j, 255 - j, 30), 0, 255)
-            
-            line_length = (v * vis_gain_multiplier)
-            line_length = 0 if line_length < 0 else line_length
-            index = (counter + (pos // 4)) % len(sin_table)
-
-            x_s = x_start + 35 * sin_table[index]
-            y_s = y_start + 35 * cos_table[index]
-            x = line_length * sin_table[index]
-            y = line_length * cos_table[index]
-            e_x, e_y = int(round(x_s + x)), int(round(y_s + y))
-            if j == 1:
-                prev_x, prev_y = e_x, e_y
-                last_x, last_y = e_x, e_y
-            if j == 256:
-                e_x, e_y = last_x, last_y
-            
-            pg.draw.line(self.vis_panel.surface, color, (prev_x, prev_y), (e_x, e_y), width = 3)
-            prev_x, prev_y = e_x, e_y
-            counter += 1
-
-
     def __visualize_circle_n_channels(self, rate: int, chunk: int, freq_interval: tuple, channels_data: tuple, pos: int, channels: int) -> None:
         """
-        Creates one frame of "circle" composed of connected peaks, draws it onto a vis_panel surface.
+        Creates one frame of "circle" composed of connected peaks for n channels, draws it onto a vis_panel surface.
         """
 
-        def draw_one_channel(channel_data: list, mid_x, mid_y, size_specifier=35):
+        def draw_one_channel(channel_data: list, mid_x, mid_y, size_specifier=35, length_multiplication=1):
             counter = 0
             f_min = freq_interval[0]
             f_max = freq_interval[1]
@@ -598,7 +548,7 @@ class App:
 
                 color = np.clip((30, 255 - j, 1 + j), 0, 255)
                 
-                line_length = (v * vis_gain_multiplier)# - (2 * size_specifier)
+                line_length = (v * vis_gain_multiplier) * length_multiplication
                 line_length = 0 if line_length < 0 else line_length
                 index = (counter + (pos // 4)) % len(sin_table)
 
@@ -617,6 +567,8 @@ class App:
                 prev_x, prev_y = e_x, e_y
                 counter += 1
         
+        if channels == 1:
+            draw_one_channel(channels_data, self.vis_panel.surface.get_width() // 2, self.vis_panel.surface.get_height() // 2, 50, 2)
         if channels == 2:
             draw_one_channel(channels_data[0], self.vis_panel.surface.get_width() // 4, self.vis_panel.surface.get_height() // 2)
             draw_one_channel(channels_data[1], self.vis_panel.surface.get_width() // 4 * 3, self.vis_panel.surface.get_height() // 2)
@@ -688,8 +640,7 @@ class App:
         Private method, should not be called explicitly.\n
         Contains the main pygame and event loop. This should be run only once by the class' __init__ method
         """
-        #         (rate, chunk, freq, wholeFileData, sound_data, wholeFileDataDivided)
-        # self.vis_data = (int, int, (int, int), list, np.ndarray, list)
+        #               (rate, chunk, freq, wholeFileData, sound_data, wholeFileDataDivided)
         self.vis_data = tuple
         self.worker_process = None
         self.initial_data_loaded = True
@@ -755,8 +706,6 @@ class App:
                     
                 self.manager.process_events(event)
 
-            # erases the previous iteration of vis + clock tick
-            self.vis_panel.surface.fill((232, 241, 242) if self.theme == 1 else (10,12,16))
             dt = self.clock.tick(self.fps)
             self.control_panel.update_ui(self.state, self.player.get_position_s(), self.player.get_song_length_s())
             self.manager.draw_ui(self.display)
@@ -774,12 +723,37 @@ class App:
 
 
             elif self.state == State.INITIAL:
-                placeholder = True
+                if self.missing_flag:
+                    files = ""
+                    for file in self.missing_files:
+                        files += os.path.basename(file)
+                        if file != self.missing_files[-1]:
+                            files += ", "
+
+                    missing_file_label = pygame_gui.elements.UILabel(
+                        relative_rect=pg.Rect(0, 0, -1, -1),
+                        text="translations.missing_files",
+                        manager=self.manager,
+                        container=self.vis_panel.panel,
+                        anchors={"leftx": "leftx", "centery": "centery"},
+                        object_id=pygame_gui.core.ObjectID(class_id="@SongItem_labels",
+                                                           object_id="#big_label")
+                    )
+                    pygame_gui.elements.UILabel(
+                        relative_rect=pg.Rect(missing_file_label.get_relative_rect().right + 2, 0, -1, -1),
+                        text=f": {files}",
+                        manager=self.manager,
+                        container=self.vis_panel.panel,
+                        anchors={"leftx": "leftx", "centery": "centery"},
+                        object_id=pygame_gui.core.ObjectID(class_id="@SongItem_labels",
+                                                           object_id="#big_label")
+                    )
+                    self.missing_flag = False
 
 
             elif self.state == State.DATA_LOADING:
                 # data is being loaded, draw the loading animation
-                
+                self.vis_panel.surface.fill((232, 241, 242) if self.theme == 1 else (10,12,16))
                 accum_time += dt
                 if accum_time >= frame_delay:
                     accum_time = 0
@@ -792,6 +766,7 @@ class App:
 
 
             elif self.state == State.PLAYING or self.state == State.PAUSED:
+                self.vis_panel.surface.fill((232, 241, 242) if self.theme == 1 else (10,12,16))
                 # is either playing, or is paused; draw the visualization
                 rate, chunk, freq_interval, processed_vis_data, _, processed_vis_data_divided = self.vis_data
 
@@ -839,14 +814,18 @@ class App:
 
                 # circle peaks
                 elif self.vis_type == 5:
-                    self.__visualize_circle_peaks(rate, chunk, freq_interval, working_data, i)
+                    self.__visualize_circle_n_channels(rate, chunk, freq_interval,
+                                                       (list(np.mean(working_data_divided, axis=0))), i, 1)
 
                 # peaks stereo
                 elif self.vis_type == 6:
                     if len(working_data_divided) == 1:
                         # if the sound is mono, display the mono twice
-                        self.__visualize_circle_n_channels(rate, chunk, freq_interval, (working_data, working_data), i, 2)
-                    self.__visualize_circle_n_channels(rate, chunk, freq_interval, (working_data_divided[0], working_data_divided[1]), i, 2)
+                        self.__visualize_circle_n_channels(rate, chunk, freq_interval,
+                                                           (working_data, working_data), i, 2)
+                    self.__visualize_circle_n_channels(rate, chunk, freq_interval,
+                                                       (working_data_divided[0],
+                                                        working_data_divided[1]), i, 2)
 
                 # peaks surround (6 ch)
                 elif self.vis_type == 7:
@@ -945,12 +924,6 @@ class App:
         """
         self.volume = value
         self.player.set_volume(value)
-
-    # def cycle_vis_type(self) -> None:
-    #     """
-    #     Cycles between visualization types.
-    #     """
-    #     self.vis_type = self.vis_type % self.vis_num + 1
 
     def set_vis_type(self, type: int) -> None:
         """
@@ -1112,13 +1085,16 @@ class App:
     def switch_language(self, language: str) -> None:
         """
         Changes language of the application.
-        Rebuilds the UI.
 
         :param language: A two letter ISO 639-1 code for a supported language.
         :type language: string
         """
         self.language = language
         self.manager.set_locale(language)
+        if language == "sk":
+            pg.display.set_caption("Hudobný prehrávač")
+        elif language == "en":
+            pg.display.set_caption("Music player")
 
     def change_window_size(self, width: int, height: int) -> None:
         """

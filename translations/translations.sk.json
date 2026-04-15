@@ -27,6 +27,9 @@
         "basic_vis_btn": "Riadok",
         "circle_vis_btn": "Kruh",
         "pulse_vis_btn": "Pulz",
-        "peak_vis_btn": "Výšky"
+        "peak_vis_btn": "Výšky",
+
+
+        "missing_files": "Chýbajúce súbory"
     }
 }
