@@ -4,6 +4,7 @@ This is a project for my bachelor's thesis. It's a music player for many popular
 
 # **Requirements:**
 Python 3.13.12
+
 FFmpeg 8.0.1 or newer
 
 **To install all required python modules, use:** 
