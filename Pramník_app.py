@@ -223,10 +223,6 @@ def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
             sound_data.append(data)
 
     sound_data = np.concatenate(sound_data, axis=0)
-    # legacy, should not happen
-    if rate != 44100:
-        sound_data = np.stack([resample_poly(ch, 44100, rate) for ch in sound_data.T], axis=1)
-        
     sound_data = normalize_audio(sound_data)
 
     retval.put((rate, chunk, freq, ret_data, sound_data, ret_data_divided))
@@ -276,7 +272,7 @@ class App:
                 self.missing_flag = True
                 self.missing_files.append(self.queue[i])
             if os.path.exists(self.original_queue[i]):
-                queue2.append(self.queue[i])
+                queue2.append(self.original_queue[i])
         self.queue = queue1.copy()
         self.original_queue = queue2.copy()
 
@@ -516,13 +512,19 @@ class App:
         Creates one frame of "circle" composed of connected peaks for n channels, draws it onto a vis_panel surface.
         """
 
-        def draw_one_channel(channel_data: list, mid_x, mid_y, size_specifier=35, length_multiplication=1):
+        def draw_one_channel(channel_data: list,
+                             mid_x,
+                             mid_y,
+                             size_specifier=35,
+                             lines_num=129,
+                             length_multiplication=1,
+                             color=[30, 255, 1],
+                             gradient_index=0):
             counter = 0
             f_min = freq_interval[0]
             f_max = freq_interval[1]
             fps = rate / chunk
 
-            lines_num = 129
             angles_rad = np.linspace(0, 2*np.pi, lines_num, endpoint=False)
             sin_table = np.sin(angles_rad)
             cos_table = np.cos(angles_rad)
@@ -533,7 +535,8 @@ class App:
             last_x, last_y = 0, 0
 
             length = len(channel_data)
-            channel_data_filtered = channel_data[0:length:2]
+            step = round(257/lines_num)
+            channel_data_filtered = channel_data[0:length:step]
             for j,v in enumerate(channel_data_filtered):
                 
                 vis_gain = 0
@@ -545,8 +548,14 @@ class App:
                 # eq taken into account:
                 vis_gain = self.vis_gains[j]
                 vis_gain_multiplier = 10 ** (vis_gain / 20)
+                out_color = color.copy()
 
-                color = np.clip((30, 255 - j, 1 + j), 0, 255)
+                out_color[0] = color[0] + j
+                out_color[1] = color[1] - j
+                out_color[2] = color[2] + j
+                out_color[gradient_index] = color[gradient_index]
+
+                out_color = np.clip(out_color, 0, 255)
                 
                 line_length = (v * vis_gain_multiplier) * length_multiplication
                 line_length = 0 if line_length < 0 else line_length
@@ -563,12 +572,14 @@ class App:
                 if j == lines_num - 1:
                     e_x, e_y = last_x, last_y
                 
-                pg.draw.line(self.vis_panel.surface, color, (prev_x, prev_y), (e_x, e_y), width = 3)
+                pg.draw.line(self.vis_panel.surface, out_color, (prev_x, prev_y), (e_x, e_y), width = 3)
                 prev_x, prev_y = e_x, e_y
                 counter += 1
         
         if channels == 1:
-            draw_one_channel(channels_data, self.vis_panel.surface.get_width() // 2, self.vis_panel.surface.get_height() // 2, 50, 2)
+            draw_one_channel(channels_data, self.vis_panel.surface.get_width() // 2,
+                             self.vis_panel.surface.get_height() // 2,
+                             50, 257, 1.5, [1, 255, 0], 2)
         if channels == 2:
             draw_one_channel(channels_data[0], self.vis_panel.surface.get_width() // 4, self.vis_panel.surface.get_height() // 2)
             draw_one_channel(channels_data[1], self.vis_panel.surface.get_width() // 4 * 3, self.vis_panel.surface.get_height() // 2)
@@ -787,16 +798,15 @@ class App:
                 ############################################################################################
                 #visualizations:
 
-                working_data = processed_vis_data[i]
                 working_data_divided = [channel[i] for channel in processed_vis_data_divided]
                 if self.processed_vis_data_max_val > 0.0:
                     scale_value = self.vis_panel.surface.get_height() / self.processed_vis_data_max_val
-                    working_data = working_data * scale_value * 1.5
                     working_data_divided = [channel * (scale_value / 2) for channel in working_data_divided]
+                    working_data_mono = list(np.mean(working_data_divided, axis=0))
 
                 # basic
                 if self.vis_type == 1:
-                    self.__visualize(rate, chunk, freq_interval, working_data)
+                    self.__visualize(rate, chunk, freq_interval, working_data_mono)
 
                 # 3D-ish
                 elif self.vis_type == 2:
@@ -806,7 +816,7 @@ class App:
 
                 # circle
                 elif self.vis_type == 3:
-                    self.__visualize_circle(rate, chunk, freq_interval, working_data, i)
+                    self.__visualize_circle(rate, chunk, freq_interval, working_data_mono, i)
 
                 # circle 3D
                 elif self.vis_type == 4:
@@ -815,17 +825,17 @@ class App:
                 # circle peaks
                 elif self.vis_type == 5:
                     self.__visualize_circle_n_channels(rate, chunk, freq_interval,
-                                                       (list(np.mean(working_data_divided, axis=0))), i, 1)
+                                                       (working_data_mono), i, 1)
 
                 # peaks stereo
                 elif self.vis_type == 6:
                     if len(working_data_divided) == 1:
                         # if the sound is mono, display the mono twice
                         self.__visualize_circle_n_channels(rate, chunk, freq_interval,
-                                                           (working_data, working_data), i, 2)
+                                                           (working_data_mono, working_data_mono), 180, 2)
                     self.__visualize_circle_n_channels(rate, chunk, freq_interval,
                                                        (working_data_divided[0],
-                                                        working_data_divided[1]), i, 2)
+                                                        working_data_divided[1]), 180, 2)
 
                 # peaks surround (6 ch)
                 elif self.vis_type == 7:
