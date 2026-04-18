@@ -243,7 +243,7 @@ class State(Enum):
 class App:
     def __init__(self):
         # circular import prevention
-        from classes import MusicControlPanel, VisPanel, VisControlPanel
+        from gui_classes import MusicControlPanel, VisPanel, VisControlPanel
 
         self.output_device = AudioUtilities.GetSpeakers()
 
