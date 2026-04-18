@@ -296,7 +296,6 @@ class App:
         # pygame init
         pg.init()
         self.display = pg.display.init()
-        pg.display.set_caption("Music player")
         icon = pg.image.load("icons/darkChartBig.png")
         pg.display.set_icon(icon)
         self.clock = pg.time.Clock()
@@ -343,6 +342,7 @@ class App:
                                             enable_live_theme_updates=True,
                                             starting_language=self.language,
                                             translation_directory_paths=["translations"])
+        self.switch_language(self.language)
         self.manager.add_font_paths(
             font_name="Inter",
             regular_path="font/Inter-VariableFont_opsz,wght.ttf"
