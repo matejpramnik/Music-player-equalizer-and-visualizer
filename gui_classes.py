@@ -4,7 +4,7 @@ import easygui
 import os
 from tinytag import TinyTag, Image
 from io import BytesIO
-from Pramník_app import State, App
+from music_player_equalizer_visualizer import State, App
 
 class Panel():
     def __init__(self, rect: pg.Rect, manager: pygame_gui.UIManager):
