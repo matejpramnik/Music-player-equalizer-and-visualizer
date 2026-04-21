@@ -97,18 +97,35 @@ class MusicControlPanel(Panel):
                  repeat_queue: bool):
         super().__init__(rect, manager)
         # config:
-        self.queue = orig_queue
+        self._queue = orig_queue
         self.freqs = freqs
         self.shuffle = shuffle
         self.repeat_one = repeat_one
         self.repeat_queue = repeat_queue
         self.volume = volume
 
-        self.currently_played_queue_index = 0
+        self._currently_played_queue_index = 0
         self.last_volume = volume
         self.playing_SongItem = None
         
         self.build_ui(orig_queue)
+
+    # queue and currently_played_queue_index as properties for cleaner access
+    @property
+    def queue(self) -> list:
+        return self._queue
+    
+    @queue.setter
+    def queue(self, q: list) -> None:
+        self._queue = q.copy()
+
+    @property
+    def currently_played_queue_index(self) -> int:
+        return self._currently_played_queue_index
+    
+    @currently_played_queue_index.setter
+    def currently_played_queue_index(self, index: int) -> None:
+        self._currently_played_queue_index = index
 
     def redraw(self, width, height, queue):
         super().redraw(width, height)
@@ -537,7 +554,7 @@ class MusicControlPanel(Panel):
                     image=image)
                 y += 87
                 q.append(song)
-        self.queue = q.copy()
+        self._queue = q.copy()
         return True
 
     def add_to_queue(self, new_queue: list) -> bool:
@@ -549,9 +566,9 @@ class MusicControlPanel(Panel):
         :type new_queue: list
         """
         if len(new_queue) == 0: return False
-        y = 87 * len(self.queue)
+        y = 87 * len(self._queue)
         for song in new_queue:
-            if song not in self.queue:
+            if song not in self._queue:
                 tag = TinyTag.get(song, image=True)
                 image: Image | None = tag.images.any
                 SongItem(rect=pg.Rect(0, y, self.surface.get_width() - 90, 85),
@@ -563,7 +580,7 @@ class MusicControlPanel(Panel):
                         object_id="#SongItem_panel",
                         file_path=song,
                         image=image)
-                self.queue.append(song)
+                self._queue.append(song)
                 y += 87
         self.queue_panel.update_containing_rect_position()
         return True
@@ -578,7 +595,7 @@ class MusicControlPanel(Panel):
         if self.playing_SongItem is not None:
             self.playing_SongItem.change_object_id(pygame_gui.core.ObjectID(object_id="#SongItem_panel"))
         for si in self.queue_panel.get_container().elements:
-            if type(si) is SongItem and self.queue[self.currently_played_queue_index] == si.file_path:
+            if type(si) is SongItem and self._queue[self._currently_played_queue_index] == si.file_path:
                 si.change_object_id(pygame_gui.core.ObjectID(object_id="#playing_SongItem_panel"))
                 self.playing_SongItem = si
                 self.song_name_label.set_text(si.song_name)
@@ -604,10 +621,10 @@ class MusicControlPanel(Panel):
 
         # next/previous button hide/show
         #   big mess
-        index = self.currently_played_queue_index
+        index = self._currently_played_queue_index
         rep_queue = self.repeat_queue
         rep_one = self.repeat_one
-        q_len = len(self.queue)
+        q_len = len(self._queue)
         state_name = state.name
         if index == q_len - 1 and self.next_btn.visible and not rep_queue and not rep_one:
             self.next_btn.hide()
@@ -742,11 +759,11 @@ class MusicControlPanel(Panel):
                     self.repeat_one = False
 
             elif event.ui_element == self.next_btn:
-                if len(self.queue) > 1:
+                if len(self._queue) > 1:
                     app.continue_in_queue(clicked_next=True)
                 
             elif event.ui_element == self.previous_btn:
-                if len(self.queue) > 1:
+                if len(self._queue) > 1:
                     app.continue_in_queue(clicked_back=True)
 
             elif event.ui_element == self.burger_menu_btn:
@@ -874,7 +891,7 @@ class MusicControlPanel(Panel):
 
             elif type(event.ui_element) is TransparentUIButton:
                 path = event.ui_element.path
-                self.currently_played_queue_index = self.queue.index(path)
+                self._currently_played_queue_index = self._queue.index(path)
                 self.mark_played()
                 app.change_song(path, clicked=True)
 

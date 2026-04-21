@@ -176,24 +176,12 @@ def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
     with wave.open(wave_audio_file, "rb") as wf:
         channels = wf.getnchannels()
         rate = wf.getframerate()
-        sampwidth = wf.getsampwidth()
         chunk = 512
         freq = (16, 22050)
         ret_data = []
         ret_data_divided = [[] for _ in range(channels)]
         sound_data = []
-
-        # legacy
-        if sampwidth == 1:
-            dtype_ = np.uint8
-        elif sampwidth == 2:
-            dtype_ = np.int16 # najbeznejsie pouzivany bitrate
-        elif sampwidth == 3:
-            raise NotImplementedError("24-bit PCM is not supported")
-        elif sampwidth == 4:
-            dtype_ = np.int32
-        else:
-            raise ValueError("Unsupported sample width")
+        dtype_ = np.int16
 
         while True:
             datas = wf.readframes(chunk)    # read "chunk" amount of frames
@@ -203,10 +191,16 @@ def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
             # visualization data
             data = np.frombuffer(datas, dtype=dtype_)
             cdata = data
+
+            if channels == 1:     # mono
+                data_together = cdata
+                calculated = calculate_magnitudes(data_together)
+
             if channels > 1:      # stereo -> mono
                 data_together = cdata.reshape(-1, channels)
-                data_together = np.mean(data_together, axis=1, dtype=np.float32)
-            calculated = calculate_magnitudes(data_together)
+                data_together_mean = np.mean(data_together, axis=1, dtype=np.float32)
+                calculated = calculate_magnitudes(data_together_mean)
+
             ret_data.append(calculated)
 
             # divided data for each channel
@@ -218,9 +212,15 @@ def get_vis_data(curr_audio_file: str, retval: Queue) -> None:
 
             # playback data
             #   sounddevice needs shape (data, channels) + dtype float32
-            data = data.astype(np.float32, copy=False)
-            data = data.reshape(-1, channels)
-            sound_data.append(data)
+            if channels == 1:
+                # if mono, repeat it to make it "stereo"
+                playback_data = np.repeat(data, repeats=2)
+                playback_data = playback_data.reshape(-1, 2)
+            else:
+                playback_data = data.reshape(-1, channels)
+
+            playback_data = playback_data.astype(np.float32, copy=False)
+            sound_data.append(playback_data)
 
     sound_data = np.concatenate(sound_data, axis=0)
     sound_data = normalize_audio(sound_data)
@@ -833,13 +833,17 @@ class App:
                         # if the sound is mono, display the mono twice
                         self.__visualize_circle_n_channels(rate, chunk, freq_interval,
                                                            (working_data_mono, working_data_mono), 180, 2)
-                    self.__visualize_circle_n_channels(rate, chunk, freq_interval,
-                                                       (working_data_divided[0],
-                                                        working_data_divided[1]), 180, 2)
+                    else:
+                        self.__visualize_circle_n_channels(rate, chunk, freq_interval,
+                                                        (working_data_divided[0],
+                                                            working_data_divided[1]), 180, 2)
 
                 # peaks surround (6 ch)
                 elif self.vis_type == 7:
                     if len(working_data_divided) < 6:
+                        # display mono twice
+                        if len(working_data_divided) == 1:
+                            working_data_divided.append(working_data_divided[0])
                         # fill missing channels with zeros
                         for __ in range(6 - len(working_data_divided)):
                             working_data_divided.append([0] * len(working_data_divided[0]))
@@ -1011,15 +1015,15 @@ class App:
         
         :param new_queue: List of new queue files.
         :param added: Is it adding to the current queue?
-        :type new_queue: Python list
+        :type new_queue: list
         :type added: boolean
         """
         if added:
             self.original_queue += new_queue.copy()
             if self.shuffle:
                 newq = new_queue.copy()
-                random.shuffle(newq)
                 self.queue += newq.copy()
+                random.shuffle(self.queue)
             else:
                 self.queue += new_queue.copy()
         else:
