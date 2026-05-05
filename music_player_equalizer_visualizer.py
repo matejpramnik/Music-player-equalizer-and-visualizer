@@ -4,7 +4,6 @@ import subprocess
 import wave
 from io import BytesIO
 from multiprocessing import Process, Queue, freeze_support
-from scipy.signal import resample_poly
 from enum import Enum
 
 
@@ -25,28 +24,6 @@ def load_frames_folder(path: str) -> list:
             img = pg.transform.smoothscale(img, (200, 200))
             frames.append(img)
     return frames
-
-def calculate_vis_gain(freqs: dict, q: float, frequency: int) -> float:
-    """
-    Legacy version for one frequency\n
-    Calculates the gain for a specific frequency, the middle frequency of an equalizer band and a Q value. Only affects frequencies in the -3 dB bandwidth.
-
-    :param freqs: A dictionary of middle frequencies of an equalizer's peak filters with their gains.
-    :param q: Q value.
-    :param frequency: Frequency for which the value should be calculated.
-    :type freqs: dictionary
-    :type q: float
-    :type frequency: integer
-    """
-    for center_freq, gain in freqs:
-        if abs(gain) <= 1e-12: continue
-        bw = center_freq / q
-        if (center_freq - bw) <= frequency <= (center_freq + bw):
-            # gain je v intervale <-120, 120>
-            # 1 / 10 sluzi ako normalizovanie do intervalu <-12, 12>, tieto hodnoty moze vis_gain nadobudat
-            return gain / (10 * (1 + (q*q) * ((frequency / center_freq) - (center_freq / frequency))**2))
-            #return gain / (10 * (1 + q * q * ((frequency**2 - center_freq**2)**2 / (frequency**2 * center_freq**2))))
-    return 0
 
 def compute_gains(frequencies: np.ndarray, center_freqs: np.ndarray, gains: np.ndarray, active: np.ndarray, q: float) -> np.ndarray:
     """
@@ -139,12 +116,13 @@ def any_audio_to_wav(path: str) -> bytes:
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            check=True
+            check=True,
+            creationflags=subprocess.CREATE_NO_WINDOW
         )
     except FileNotFoundError:
         print("FFmpeg is required in order to use this app!\nExiting now...")
         pg.quit()
-        exit("FFmpeg not present on this system")
+        raise SystemExit
 
     return result.stdout
 
@@ -665,6 +643,9 @@ class App:
         accum_time = 0
         frame_delay = 25
 
+        missing_files = None
+        missing_file_label = None
+
         while self.running:
 
             # check for device change
@@ -703,7 +684,7 @@ class App:
                     }
                     with open("config.json", "w") as f:
                         json.dump(save_config, f)
-                    quit()
+                    raise SystemExit
 
                 elif event.type == pygame_gui.UI_BUTTON_PRESSED or \
                     event.type == pygame_gui.UI_HORIZONTAL_SLIDER_MOVED or \
@@ -750,7 +731,7 @@ class App:
                         object_id=pygame_gui.core.ObjectID(class_id="@SongItem_labels",
                                                            object_id="#big_label")
                     )
-                    pygame_gui.elements.UILabel(
+                    missing_files = pygame_gui.elements.UILabel(
                         relative_rect=pg.Rect(missing_file_label.get_relative_rect().right + 2, 0, -1, -1),
                         text=f": {files}",
                         manager=self.manager,
@@ -763,6 +744,9 @@ class App:
 
 
             elif self.state == State.DATA_LOADING:
+                if missing_file_label is not None:
+                    missing_file_label.set_text("")
+                    missing_files.set_text("")
                 # data is being loaded, draw the loading animation
                 self.vis_panel.surface.fill((232, 241, 242) if self.theme == 1 else (10,12,16))
                 accum_time += dt
