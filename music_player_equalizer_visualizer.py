@@ -232,8 +232,8 @@ class App:
         except FileNotFoundError:
             config_data = None
 
-        self.screen_width = config_data["width"] if config_data != None else 1360
-        self.screen_height = config_data["height"] if config_data != None else 800
+        self.screen_width = config_data["width"] if config_data != None else 1300
+        self.screen_height = config_data["height"] if config_data != None else 790
 
         # the route may not exist (SAN/NAS, network drive)
         self.queue = config_data["queue"] if config_data != None else []

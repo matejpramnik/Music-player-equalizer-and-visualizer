@@ -799,6 +799,7 @@ class MusicControlPanel(Panel):
             elif event.ui_element == self.open_file_btn:
                 # blocks ui, laggy when many files are chosen; pygame_gui is not thread-safe
                 path = self.open_file()
+                path = [file for file in path if os.path.splitext(file)[1] in self.supported_extensions]
                 status = self.add_to_queue(path)
                 if status:
                     app.queue_changed(path, added=True)
